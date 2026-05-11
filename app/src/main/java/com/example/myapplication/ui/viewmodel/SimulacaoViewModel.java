@@ -26,7 +26,6 @@ public class SimulacaoViewModel extends ViewModel {
     private final TaskHelper taskHelper;
     private final MutableLiveData<SimulacaoState> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
-
     @Inject
     public SimulacaoViewModel(TaskHelper taskHelper,
                               PrecificacaoBezerroRepository repositorio,

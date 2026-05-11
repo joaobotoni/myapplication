@@ -17,7 +17,7 @@ public class PropostaState {
         this.valorPorCabeca = valorPorCabeca;
         this.valorTotal = valorTotal;
         this.fretePorKg = fretePorKg;
-        this.isFreteDescontado = fretePorKg != null;
+        this.isFreteDescontado = fretePorKg != null && fretePorKg.compareTo(BigDecimal.ZERO) != 0;
         this.freteState = freteState;
     }
 

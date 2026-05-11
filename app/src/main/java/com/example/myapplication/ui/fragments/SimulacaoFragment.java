@@ -59,125 +59,135 @@ public class SimulacaoFragment extends Fragment {
     }
 
     private void configurarComportamentosDeTela() {
-        processarNovosValores();
+        configurarTextWatcherEntradas();
         configurarAcaoBotaoProsseguir();
-    }
-
-    private void processarNovosValores() {
-        binding.campoPesoEntrada.addTextChangedListener(SimpleTextWatcher(this::lidarComMudancaDeEntrada));
-        binding.campoQuantidadeEntrada.addTextChangedListener(SimpleTextWatcher(this::lidarComMudancaDeEntrada));
-    }
-
-    private void lidarComMudancaDeEntrada() {
-        atualizarEstadoDoBotaoProsseguir();
-        simularNegociacao();
-    }
-
-    private void atualizarEstadoDoBotaoProsseguir() {
-        boolean habilitado = entradasSaoValidas();
-        definirEstadoHabilitadoDoBotao(habilitado);
-    }
-
-    private void definirEstadoHabilitadoDoBotao(boolean habilitado) {
-        binding.botaoProsseguir.setEnabled(habilitado);
-    }
-
-    private void configurarAcaoBotaoProsseguir() {
-        binding.botaoProsseguir.setOnClickListener(v -> processarTentativaDeProsseguir());
     }
 
     private void observarEstadoDaViewModel() {
         simulacaoViewModel.getState().observe(getViewLifecycleOwner(), this::atualizarCartao);
     }
 
-    private void simularNegociacao() {
-        if (!entradasSaoValidas()) {
-            simulacaoViewModel.limpar();
-            return;
-        }
-        int quantidade = obterCargaTotal();
-        BigDecimal peso = new BigDecimal(obterPesoMedio());
-        simulacaoViewModel.simular(peso, quantidade);
+    private void configurarTextWatcherEntradas() {
+        binding.campoPesoEntrada.addTextChangedListener(SimpleTextWatcher(this::aoAlterarEntrada));
+        binding.campoQuantidadeEntrada.addTextChangedListener(SimpleTextWatcher(this::aoAlterarEntrada));
+    }
+
+    private void configurarAcaoBotaoProsseguir() {
+        binding.botaoProsseguir.setOnClickListener(v -> processarTentativaDeProsseguir());
+    }
+
+    private void aoAlterarEntrada() {
+        atualizarEstadoDoBotaoProsseguir();
+        simularNegociacao();
     }
 
     private void processarTentativaDeProsseguir() {
-        if (!entradasSaoValidas()) {
-            return;
-        }
+        if (isEntradaInvalida()) return;
         navegarParaNegociacao();
     }
 
-    private boolean entradasSaoValidas() {
-        return !anyEmpty(binding.campoQuantidadeEntrada, binding.campoPesoEntrada);
+    private void simularNegociacao() {
+        if (isEntradaInvalida()) {
+            simulacaoViewModel.limpar();
+            return;
+        }
+        simulacaoViewModel.simular(obterPesoMedio(), obterCargaTotal());
     }
 
-    private int obterCargaTotal() {
-        return getInt(binding.campoQuantidadeEntrada);
+    private void atualizarEstadoDoBotaoProsseguir() {
+        binding.botaoProsseguir.setEnabled(isEntradaValida());
     }
 
-    private float obterPesoMedio() {
-        return getFloat(binding.campoPesoEntrada);
-    }
-
-    private void atualizarCartao(SimulacaoState estado) {
-        if (estado == null) {
+    private void atualizarCartao(@Nullable SimulacaoState estado) {
+        if (isEstadoVazio(estado)) {
             limparCartao();
             return;
         }
-
         atualizarValorTotal(estado);
         atualizarQuantidade(estado);
         atualizarValorPorCabeca(estado);
         atualizarValorPorKg(estado);
     }
 
-    private void limparCartao() {
-        exibirValorTotal(getString(R.string.placeholder_valor_total));
-        exibirQuantidade(getString(R.string.placeholder_valor_quantidade));
-        exibirValorPorCabeca(getString(R.string.placeholder_valor_monetario));
-        exibirValorPorKg(getString(R.string.placeholder_valor_monetario));
-    }
-
     private void atualizarValorTotal(@NonNull SimulacaoState estado) {
-        String valorFormatado = formatCurrency(estado.getValorTotal());
-        exibirValorTotal(valorFormatado);
+        exibirValorTotal(formatCurrency(estado.getValorTotal()));
     }
 
     private void atualizarQuantidade(@NonNull SimulacaoState estado) {
-        String quantidadeFormatada = formatInteger(estado.getQuantidade());
-        exibirQuantidade(quantidadeFormatada);
+        exibirQuantidade(formatInteger(estado.getQuantidade()));
     }
 
     private void atualizarValorPorCabeca(@NonNull SimulacaoState estado) {
-        String valorFormatado = formatCurrency(estado.getValorPorCabeca());
-        exibirValorPorCabeca(valorFormatado);
+        exibirValorPorCabeca(formatCurrency(estado.getValorPorCabeca()));
     }
 
     private void atualizarValorPorKg(@NonNull SimulacaoState estado) {
-        String valorFormatado = formatCurrency(estado.getValorPorKg());
-        exibirValorPorKg(valorFormatado);
+        exibirValorPorKg(formatCurrency(estado.getValorPorKg()));
     }
 
-    private void exibirValorTotal(String total) {
-        setText(binding.textoValorTotalDestacado, total);
+    private void limparCartao() {
+        exibirValorTotal(placeholderValorTotal());
+        exibirQuantidade(placeholderQuantidade());
+        exibirValorPorCabeca(placeholderValorMonetario());
+        exibirValorPorKg(placeholderValorMonetario());
     }
 
-    private void exibirQuantidade(String quantidade) {
+    private void exibirValorTotal(@NonNull String valor) {
+        setText(binding.textoValorTotalDestacado, valor);
+    }
+
+    private void exibirQuantidade(@NonNull String quantidade) {
         setText(binding.textoValorQuantidade, quantidade);
     }
 
-    private void exibirValorPorCabeca(String porCabeca) {
-        setText(binding.textoValorPorCabeca, porCabeca);
+    private void exibirValorPorCabeca(@NonNull String valor) {
+        setText(binding.textoValorPorCabeca, valor);
     }
 
-    private void exibirValorPorKg(String porKg) {
-        setText(binding.textoValorPorKg, porKg);
+    private void exibirValorPorKg(@NonNull String valor) {
+        setText(binding.textoValorPorKg, valor);
+    }
+
+    @NonNull
+    private String placeholderValorTotal() {
+        return getString(R.string.placeholder_valor_total);
+    }
+
+    @NonNull
+    private String placeholderQuantidade() {
+        return getString(R.string.placeholder_valor_quantidade);
+    }
+
+    @NonNull
+    private String placeholderValorMonetario() {
+        return getString(R.string.placeholder_valor_monetario);
+    }
+
+    private int obterCargaTotal() {
+        return getInt(binding.campoQuantidadeEntrada);
+    }
+
+    private BigDecimal obterPesoMedio() {
+        return new BigDecimal(getFloat(binding.campoPesoEntrada));
+    }
+
+    private boolean isEntradaValida() {
+        return !anyEmpty(binding.campoQuantidadeEntrada, binding.campoPesoEntrada);
+    }
+
+    private boolean isEntradaInvalida() {
+        return !isEntradaValida();
+    }
+
+    private boolean isEstadoVazio(@Nullable SimulacaoState estado) {
+        return estado == null;
     }
 
     private void navegarParaNegociacao() {
         SimulacaoFragmentDirections.ActionSimulacaoFragmentToNegociacaoFragment directions =
                 SimulacaoFragmentDirections.actionSimulacaoFragmentToNegociacaoFragment()
-                        .setCargaTotal(obterCargaTotal()).setPesoMedio(obterPesoMedio());
+                        .setCargaTotal(obterCargaTotal())
+                        .setPesoMedio(obterPesoMedio().floatValue());
         NavHostFragment.findNavController(this).navigate(directions);
     }
 }
