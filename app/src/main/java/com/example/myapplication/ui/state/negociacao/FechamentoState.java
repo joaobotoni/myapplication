@@ -14,12 +14,12 @@ public class FechamentoState {
         this.valorPorCabeca = valorPorCabeca;
         this.valorTotal = valorTotal;
         this.comissaoPorKg = comissaoPorKg;
-        this.isComissaoAplicada = comissaoPorKg != null;
+        this.isComissaoAplicada = comissaoPorKg != null && comissaoPorKg.compareTo(BigDecimal.ZERO) != 0;
     }
+
 
     public BigDecimal getValorPorKg() { return valorPorKg; }
     public BigDecimal getValorPorCabeca() { return valorPorCabeca; }
-
     public BigDecimal getValorTotal() { return valorTotal; }
     public BigDecimal getComissaoPorKg() { return comissaoPorKg; }
     public boolean isComissaoAplicada() { return isComissaoAplicada; }

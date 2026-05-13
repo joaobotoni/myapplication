@@ -79,6 +79,7 @@ public class NegociacaoFragment extends Fragment {
     private CategoriaState categoriaAtual;
     private RacaState racaAtual;
 
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -86,6 +87,7 @@ public class NegociacaoFragment extends Fragment {
         binding = FragmentNegociacaoBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
+
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -106,7 +108,7 @@ public class NegociacaoFragment extends Fragment {
         configurarComportamentosDeTela();
         configurarEventosDeClique();
         observarEstadosDasViewModels();
-        processarCotacao();
+        processarCotacaoSeNecessario();
     }
 
     private void extrairArgumentosDeNavegacao() {
@@ -169,16 +171,14 @@ public class NegociacaoFragment extends Fragment {
 
     private void configurarTextWatcherIdade() {
         binding.campoIdadeEntrada.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus)
-                binding.campoIdadeEntrada.addTextChangedListener(especificacaoTextWatcher);
+            if (hasFocus) binding.campoIdadeEntrada.addTextChangedListener(especificacaoTextWatcher);
             else binding.campoIdadeEntrada.removeTextChangedListener(especificacaoTextWatcher);
         });
     }
 
     private void configurarTextWatcherValorCabeca() {
         binding.campoValorCabecaEntrada.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus)
-                binding.campoValorCabecaEntrada.addTextChangedListener(valorCabecaTextWatcher);
+            if (hasFocus) binding.campoValorCabecaEntrada.addTextChangedListener(valorCabecaTextWatcher);
             else binding.campoValorCabecaEntrada.removeTextChangedListener(valorCabecaTextWatcher);
         });
     }
@@ -277,6 +277,10 @@ public class NegociacaoFragment extends Fragment {
 
     private void aoValorCabecaAlterado() {
         if (isCampoValorCabecaVazio()) {
+            limparVariacao();
+            limparCardCorretor();
+            limparSelecaoCorretor();
+            restaurarPlaceholderFechamento();
             return;
         }
         negociacaoViewModel.recalcularPropostaPorCabeca(obterValorPorCabeca(), BigDecimal.valueOf(peso), quantidade);
@@ -284,6 +288,10 @@ public class NegociacaoFragment extends Fragment {
 
     private void aoValorKgAlterado() {
         if (isCampoValorKgVazio()) {
+            limparVariacao();
+            limparCardCorretor();
+            limparSelecaoCorretor();
+            restaurarPlaceholderFechamento();
             return;
         }
         negociacaoViewModel.recalcularPropostaPorKg(obterValorPorKg(), BigDecimal.valueOf(peso), quantidade);
@@ -361,8 +369,10 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void atualizarValoresPedido(@Nullable PropostaState propostaState) {
-        if (isPropostaSemEstado(propostaState)) return;
-        if (!isFreteDescontado(propostaState)) return;
+        if (isPropostaSemEstado(propostaState) || !isFreteDescontado(propostaState)) {
+            restaurarPlaceholderProposta();
+            return;
+        }
         preencherCamposEditaveis(propostaState.getValorPorCabeca(), propostaState.getValorPorKg());
         exibirValorEtapaPedido(formatCurrency(propostaState.getValorPorCabeca()));
         exibirDescricaoEtapaPedido(formatCurrency(propostaState.getValorPorKg()));
@@ -371,8 +381,10 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void atualizarValoresFechamento(@Nullable FechamentoState fechamentoState) {
-        if (isFechamentoSemEstado(fechamentoState)) return;
-        if (!isComissaoAplicada(fechamentoState)) return;
+        if (isFechamentoSemEstado(fechamentoState) || !isComissaoAplicada(fechamentoState)) {
+            restaurarPlaceholderFechamento();
+            return;
+        }
         exibirValorEtapaFinal(formatCurrency(fechamentoState.getValorPorCabeca()));
         exibirDescricaoEtapaFinal(formatCurrency(fechamentoState.getValorPorKg()));
         exibirBadgeCorretor(formatCurrency(fechamentoState.getComissaoPorKg()));
@@ -417,6 +429,12 @@ public class NegociacaoFragment extends Fragment {
     private void restaurarSexo(@Nullable String sexo) {
         if (sexo == null) return;
         selectChip(binding.listaSexos, sexo);
+    }
+
+    private void processarCotacaoSeNecessario() {
+        if (!negociacaoViewModel.isCotacaoCalculada()) {
+            processarCotacao();
+        }
     }
 
     private void processarCotacao() {
@@ -464,8 +482,23 @@ public class NegociacaoFragment extends Fragment {
         exibirDescricaoCorretor(getString(R.string.descricao_sem_comissao));
     }
 
+
     private void limparHelperTextFrete() {
         exibirHelperTextFrete(formatCurrency(BigDecimal.ZERO));
+    }
+
+    private void restaurarPlaceholderProposta() {
+        exibirPlaceholderValorEtapaPedido();
+        exibirPlaceholderDescricaoEtapaPedido();
+        exibirPlaceholderBadgeEtapaFrete();
+        exibirPlaceholderValorFornecedor();
+    }
+
+    private void restaurarPlaceholderFechamento() {
+        exibirPlaceholderValorEtapaFinal();
+        exibirPlaceholderDescricaoEtapaFinal();
+        exibirPlaceholderBadgeEtapaCorretor();
+        exibirPlaceholderValorTotal();
     }
 
     private void exibirBottomSheetEmpresa() {
@@ -506,6 +539,38 @@ public class NegociacaoFragment extends Fragment {
 
     private void exibirBadgeCorretor(@NonNull String valor) {
         setText(binding.textoBadgeEtapaCorretor, String.format(Locale.getDefault(), "+R$ %s/kg", valor));
+    }
+
+    private void exibirPlaceholderValorEtapaPedido() {
+        setText(binding.textoValorEtapaPedido, getString(R.string.placeholder_valor_monetario));
+    }
+
+    private void exibirPlaceholderDescricaoEtapaPedido() {
+        setText(binding.textoDescricaoEtapaPedido, getString(R.string.placeholder_valor_por_kg_default));
+    }
+
+    private void exibirPlaceholderBadgeEtapaFrete() {
+        setText(binding.textoBadgeEtapaFrete, getString(R.string.placeholder_badge_diferenca_default));
+    }
+
+    private void exibirPlaceholderValorFornecedor() {
+        setText(binding.textoValorFornecedor, getString(R.string.placeholder_valor_total));
+    }
+
+    private void exibirPlaceholderValorEtapaFinal() {
+        setText(binding.textoValorEtapaFinal, getString(R.string.placeholder_valor_monetario));
+    }
+
+    private void exibirPlaceholderDescricaoEtapaFinal() {
+        setText(binding.textoDescricaoEtapaFinal, getString(R.string.placeholder_valor_por_kg_default));
+    }
+
+    private void exibirPlaceholderBadgeEtapaCorretor() {
+        setText(binding.textoBadgeEtapaCorretor, getString(R.string.placeholder_badge_diferenca_default));
+    }
+
+    private void exibirPlaceholderValorTotal() {
+        setText(binding.textoValorTotal, getString(R.string.placeholder_valor_total));
     }
 
     private void exibirValorFornecedor(@NonNull String valor) {
@@ -568,19 +633,19 @@ public class NegociacaoFragment extends Fragment {
 
     @NonNull
     private String formatarDescricaoCorretor(@NonNull CorretorState corretorState) {
-        return String.format(Locale.getDefault(), "R$ %s/%s -> R$ %s",
+        return String.format(Locale.getDefault(), "R$ %s/%s -> R$ %s/t",
                 formatCurrency(corretorState.getComissao()), corretorState.getTipoComissao(),
                 formatCurrency(corretorState.getComissao().multiply(BigDecimal.valueOf(quantidade))));
     }
 
     @NonNull
     private String formatarTituloValorFrete(@NonNull PrecificacaoFreteState freteState) {
-        return String.format(Locale.getDefault(), "R$ %s", formatCurrency(freteState.getValorTotal()));
+        return String.format(Locale.getDefault(), "R$ %s/c", formatCurrency(freteState.getValorTotal()));
     }
 
     @NonNull
     private String formatarDescricaoValorFrete(@NonNull PrecificacaoFreteState freteState) {
-        return String.format(Locale.getDefault(), "R$ %s", formatCurrency(freteState.getValorParcial()));
+        return String.format(Locale.getDefault(), "R$ %s/kg", formatCurrency(freteState.getValorParcial()));
     }
 
 
@@ -619,13 +684,19 @@ public class NegociacaoFragment extends Fragment {
     private boolean isIdadePreenchida() {
         return isNotEmpty(binding.campoIdadeEntrada);
     }
+
     private boolean isSexoSelecionado() {
         return isNotEmpty(obterValorSexoSelecionado());
     }
+
     private boolean isCampoFreteVazio() {
         return !isNotEmpty(binding.campoFreteEntrada);
     }
-    private boolean isCampoValorCabecaVazio() {return !isNotEmpty(binding.campoValorCabecaEntrada);}
+
+    private boolean isCampoValorCabecaVazio() {
+        return !isNotEmpty(binding.campoValorCabecaEntrada);
+    }
+
     private boolean isCampoValorKgVazio() {
         return !isNotEmpty(binding.campoValorKgEntrada);
     }

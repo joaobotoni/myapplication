@@ -7,9 +7,10 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.GET;
+import retrofit2.http.Path;
 
 public interface GespecEmpresaService {
 
-    @GET("empresas")
-    Call<List<Empresa>> getAll();
+    @GET("empresas/{usuario}")
+    Call<List<Empresa>> getAll(@Path("usuario") String usuario);
 }

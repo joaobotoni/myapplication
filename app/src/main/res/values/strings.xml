@@ -161,7 +161,8 @@
     <string name="url_directions">"https://routes.googleapis.com/directions/v2:computeRoutes";</string>
     <string name="url_usuario_gespec">http://%1$s:%2$s/gespec/gespecservices/UsuarioService/obtem/%3$s/%4$s/%5$s</string>
     <string name="url_acesso_gespec">http://%1$s:%2$s/gespec/gespecservices/AcessoService/obtem/%3$s</string>
-    <string name="url_negociacao_gespec">http://%1$s:%2$s/gespec/gespecservices/NegGadoService/%3$s/%4$s/FLOW</string>
+
+    <string name="url_negociacao_gespec">http://%1$s:%2$s/gespec/gespecservices/NegGadoService/</string>
 
     <string name="exemplo">http://172.10.1.28:8400/gespec/gespecservices/NegGadoService/valoresReferencia/SUPORTE/FLOW</string>
 

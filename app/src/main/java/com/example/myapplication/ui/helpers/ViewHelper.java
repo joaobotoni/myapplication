@@ -115,10 +115,10 @@ public class ViewHelper {
     }
 
     public static void setTextSafely(@NonNull EditText field, @NonNull String value, @NonNull TextWatcher watcher) {
-        if (field.hasFocus()) {
-            return;
-        }
+        if (field.hasFocus()) return;
+        field.removeTextChangedListener(watcher);
         field.setText(value);
+        field.addTextChangedListener(watcher);
     }
 
     public static void selectChip(@NonNull ChipGroup chipGroup, @NonNull String text) {
