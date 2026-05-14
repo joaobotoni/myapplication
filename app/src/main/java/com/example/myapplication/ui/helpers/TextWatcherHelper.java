@@ -1,103 +1,123 @@
 package com.example.myapplication.ui.helpers;
 
-import static com.example.myapplication.utils.DecimalUtil.CURRENCY_FORMAT;
-import static com.example.myapplication.utils.DecimalUtil.MAX_VALUE;
-
 import android.text.Editable;
 import android.text.TextWatcher;
+
 import androidx.annotation.NonNull;
 
-public class TextWatcherHelper {
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Objects;
 
+public final class TextWatcherHelper {
 
-    @NonNull
-    public static TextWatcher SimpleTextWatcher(@NonNull Runnable runnable) {
-        return new TextWatcher() {
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                runnable.run();
-            }
-        };
+    private TextWatcherHelper() {
+        throw new AssertionError("TextWatcherHelper is a utility class and must not be instantiated.");
     }
 
-    @NonNull
-    public static TextWatcher SearchTextWatcher(@NonNull Runnable runnable) {
-        final int MIN_SEARCH_LENGTH = 3;
-        return new TextWatcher() {
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (hasMinSearchLength(s)) runnable.run();
-            }
-
-            private boolean hasMinSearchLength(CharSequence s) {
-                return s.length() >= MIN_SEARCH_LENGTH;
-            }
-        };
+    public interface TextFormatter {
+        @NonNull String format(@NonNull String input);
     }
 
-    @NonNull
-    public static TextWatcher MoneyTextWatcher(@NonNull Runnable runnable) {
-        return new TextWatcher() {
-            private boolean isUpdating = false;
+    public abstract static class BaseTextWatcher implements TextWatcher {
+        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+        @Override public void afterTextChanged(Editable s) {}
+    }
 
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (isUpdating) return;
-                String formatted = formatCurrency(s.toString());
-                if (isUnchanged(s.toString(), formatted)) return;
-                applyFormat(s, formatted);
-                runnable.run();
-            }
-            private void applyFormat(Editable s, String formatted) {
+    public static class SimpleTextWatcher extends BaseTextWatcher {
+        private final Runnable onChanged;
+
+        public SimpleTextWatcher(@NonNull Runnable onChanged) {
+            Objects.requireNonNull(onChanged, "onChanged must not be null");
+
+            this.onChanged = onChanged;
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            onChanged.run();
+        }
+    }
+
+    public static class SearchTextWatcher extends BaseTextWatcher {
+        private final Runnable onChanged;
+        private final int minLength;
+
+        public SearchTextWatcher(int minLength, @NonNull Runnable onChanged) {
+            if (minLength < 1) throw new IllegalArgumentException("minLength must be >= 1");
+            Objects.requireNonNull(onChanged, "onChanged must not be null");
+
+            this.minLength = minLength;
+            this.onChanged = onChanged;
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            if (s != null && s.length() >= minLength) onChanged.run();
+        }
+    }
+
+    public static class FormattingTextWatcher extends BaseTextWatcher {
+        private final TextFormatter formatter;
+        private final Runnable onChanged;
+        private boolean isUpdating = false;
+
+        public FormattingTextWatcher(@NonNull TextFormatter formatter, @NonNull Runnable onChanged) {
+            Objects.requireNonNull(formatter, "formatter must not be null");
+            Objects.requireNonNull(onChanged, "onChanged must not be null");
+
+            this.formatter = formatter;
+            this.onChanged = onChanged;
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            if (isUpdating) return;
+            String current = s.toString();
+            String formatted = formatter.format(current);
+            if (!current.equals(formatted)) {
                 isUpdating = true;
                 s.replace(0, s.length(), formatted);
                 isUpdating = false;
             }
+            onChanged.run();
+        }
+    }
 
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+    public static class CurrencyFormatter implements TextFormatter {
+        private final double maxValue;
+        private final NumberFormat format;
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
+        public CurrencyFormatter(double maxValue, @NonNull NumberFormat format) {
+            Objects.requireNonNull(format, "format must not be null");
 
-            private String formatValue(String input) {
-                return input.replaceAll("[^\\d]", "");
-            }
-            private double formatDecimal(String digits) {
-                return Double.parseDouble(digits) / 100.0;
-            }
-            private String formatCurrency(String input) {
-                String digits = formatValue(input);
-                if (digits.isEmpty()) return "";
-                double value = formatDecimal(digits);
-                return isAboveLimit(value) ? input : CURRENCY_FORMAT.format(value);
-            }
+            this.maxValue = maxValue;
+            this.format = format;
+        }
 
-            private boolean isUnchanged(String current, String formatted) {
-                return current.equals(formatted) && !formatted.isEmpty();
-            }
+        @NonNull
+        @Override
+        public String format(@NonNull String input) {
+            String digits = input.replaceAll("[^\\d]", "");
+            if (digits.isEmpty()) return "";
+            BigDecimal value = new BigDecimal(digits).movePointLeft(2);
+            return value.compareTo(BigDecimal.valueOf(maxValue)) > 0.0 ? input : format.format(value);
+        }
+    }
 
-            private boolean isAboveLimit(double value) {
-                return value > MAX_VALUE;
-            }
-        };
+    @NonNull
+    public static TextWatcher simpleTextWatcher(@NonNull Runnable onChanged) {
+        return new SimpleTextWatcher(onChanged);
+    }
+
+    @NonNull
+    public static TextWatcher searchTextWatcher(int minLength, @NonNull Runnable onChanged) {
+        return new SearchTextWatcher(minLength, onChanged);
+    }
+
+    @NonNull
+    public static TextWatcher moneyTextWatcher(double maxValue, @NonNull NumberFormat format, @NonNull Runnable onChanged) {
+        return new FormattingTextWatcher(new CurrencyFormatter(maxValue, format), onChanged);
     }
 }

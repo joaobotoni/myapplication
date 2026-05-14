@@ -11,7 +11,7 @@
     <string name="dialogo_botao_negativo">Não</string>
 
     <string name="prefixo_moeda">R$</string>
-    <string name="sufixo_cabecas">cab</string>
+    <string name="sufixo_cabecas">/cab</string>
     <string name="sufixo_kg">/kg</string>
     <string name="sufixo_por_cabeca">/cab</string>
     <string name="unidade_kg">kg</string>
@@ -141,7 +141,6 @@
     <string name="amostra_valor_por_kg">R$ 6,80</string>
     <string name="amostra_opcao_categoria">Categoria</string>
     <string name="amostra_opcao_raca">Raça</string>
-
 
 
     <string name="chave_api_google_maps">com.google.android.geo.API_KEY</string>

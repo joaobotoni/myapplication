@@ -22,7 +22,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FileHelper {
+public final class FileHelper {
 
     private FileHelper() {
     }

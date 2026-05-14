@@ -1,14 +1,15 @@
 package com.example.myapplication.ui.fragments;
 
 import static com.example.myapplication.ui.helpers.FormatHelper.formatCurrency;
-import static com.example.myapplication.ui.helpers.ViewHelper.getBigDecimal;
 import static com.example.myapplication.ui.helpers.ViewHelper.getCheckedChipText;
-import static com.example.myapplication.ui.helpers.ViewHelper.getInt;
 import static com.example.myapplication.ui.helpers.ViewHelper.isNotEmpty;
+import static com.example.myapplication.ui.helpers.ViewHelper.parseDecimal;
+import static com.example.myapplication.ui.helpers.ViewHelper.parseInt;
 import static com.example.myapplication.ui.helpers.ViewHelper.selectChip;
 import static com.example.myapplication.ui.helpers.ViewHelper.setHelperText;
 import static com.example.myapplication.ui.helpers.ViewHelper.setText;
 import static com.example.myapplication.ui.helpers.ViewHelper.setTextSafely;
+import static com.example.myapplication.utils.DecimalUtil.createCurrencyFormat;
 
 import android.os.Bundle;
 import android.text.TextWatcher;
@@ -59,7 +60,6 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class NegociacaoFragment extends Fragment {
-
     private FragmentNegociacaoBinding binding;
     private CategoriaAdapter categoriaAdapter;
     private RacaAdapter racaAdapter;
@@ -149,10 +149,10 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void inicializarTextWatchers() {
-        freteTextWatcher = TextWatcherHelper.MoneyTextWatcher(this::aoFreteManualAlterado);
-        especificacaoTextWatcher = TextWatcherHelper.SimpleTextWatcher(this::aoEspecificacaoAlterada);
-        valorCabecaTextWatcher = TextWatcherHelper.MoneyTextWatcher(this::aoValorCabecaAlterado);
-        valorKgTextWatcher = TextWatcherHelper.MoneyTextWatcher(this::aoValorKgAlterado);
+        freteTextWatcher = TextWatcherHelper.moneyTextWatcher(Double.MAX_VALUE, createCurrencyFormat(), this::aoFreteManualAlterado);
+        especificacaoTextWatcher = TextWatcherHelper.simpleTextWatcher(this::aoEspecificacaoAlterada);
+        valorCabecaTextWatcher = TextWatcherHelper.moneyTextWatcher(Double.MAX_VALUE, createCurrencyFormat(), this::aoValorCabecaAlterado);
+        valorKgTextWatcher = TextWatcherHelper.moneyTextWatcher(Double.MAX_VALUE, createCurrencyFormat(), this::aoValorKgAlterado);
     }
 
     private void configurarComportamentosDeTela() {
@@ -597,7 +597,7 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void exibirDescricaoEtapaCotado(@NonNull String descricao) {
-        setText(binding.textoDescricaoEtapaCotado, descricao);
+        setText(binding.textoDescricaoEtapaCotado, String.format(Locale.getDefault(), "R$ %s", descricao));
     }
 
     private void exibirValorEtapaPedido(@NonNull String valor) {
@@ -605,7 +605,7 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void exibirDescricaoEtapaPedido(@NonNull String descricao) {
-        setText(binding.textoDescricaoEtapaPedido, descricao);
+        setText(binding.textoDescricaoEtapaPedido, String.format(Locale.getDefault(), "R$ %s", descricao));
     }
 
     private void exibirBadgeFrete(@NonNull String valor) {
@@ -621,7 +621,7 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void exibirDescricaoEtapaFinal(@NonNull String descricao) {
-        setText(binding.textoDescricaoEtapaFinal, descricao);
+        setText(binding.textoDescricaoEtapaFinal, String.format(Locale.getDefault(), "R$ %s", descricao));
     }
 
     private void exibirBadgeCorretor(@NonNull String valor) {
@@ -755,17 +755,17 @@ public class NegociacaoFragment extends Fragment {
 
     @NonNull
     private BigDecimal obterValorTotalFrete() {
-        return getBigDecimal(binding.campoFreteEntrada);
+        return parseDecimal(binding.campoFreteEntrada);
     }
 
     @NonNull
     private BigDecimal obterValorPorCabeca() {
-        return getBigDecimal(binding.campoValorCabecaEntrada);
+        return parseDecimal(binding.campoValorCabecaEntrada);
     }
 
     @NonNull
     private BigDecimal obterValorPorKg() {
-        return getBigDecimal(binding.campoValorKgEntrada);
+        return parseDecimal(binding.campoValorKgEntrada);
     }
 
     @Nullable
@@ -778,7 +778,7 @@ public class NegociacaoFragment extends Fragment {
     }
     @Nullable
     private Integer obterTextoIdade() {
-        return isIdadePreenchida() ? getInt(binding.campoIdadeEntrada) : null;
+        return isIdadePreenchida() ? parseInt(binding.campoIdadeEntrada) : null;
     }
 
     private boolean isFormularioIncompleto() {

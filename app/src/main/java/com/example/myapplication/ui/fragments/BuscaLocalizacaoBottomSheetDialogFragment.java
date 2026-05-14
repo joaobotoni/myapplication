@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentBottomSheetCorretorBuscaEnderecoBinding;
 import com.example.myapplication.ui.adapters.LocationAdapter;
+import com.example.myapplication.ui.helpers.TextWatcherHelper;
 import com.example.myapplication.ui.state.BuscaLocalizacaoState;
 import com.example.myapplication.ui.viewmodel.BuscaLocalizacaoViewModel;
 import com.example.myapplication.ui.viewmodel.RotaViewModel;
@@ -97,7 +98,7 @@ public class BuscaLocalizacaoBottomSheetDialogFragment extends BottomSheetDialog
     }
 
     private void configurarInput() {
-        binding.textInputEditText.addTextChangedListener(SearchTextWatcher(this::buscar));
+        binding.textInputEditText.addTextChangedListener(TextWatcherHelper.searchTextWatcher(3, this::buscar));
     }
 
     private void configurarObservadores() {
@@ -105,6 +106,7 @@ public class BuscaLocalizacaoBottomSheetDialogFragment extends BottomSheetDialog
         buscaLocalizacaoViewModel.getError().observe(getViewLifecycleOwner(), this::tratarErroBusca);
         buscaLocalizacaoViewModel.getError().observe(getViewLifecycleOwner(), this::tratarErroRota);
     }
+
     private void atualizarListaLocalizacoes(@Nullable BuscaLocalizacaoState state) {
         adapter.submitList(state != null ? state.getLocalizacoes() : null);
     }
@@ -124,6 +126,7 @@ public class BuscaLocalizacaoBottomSheetDialogFragment extends BottomSheetDialog
         rotaViewModel.selecionar(origem, getString(R.string.destino_padrao));
         dismiss();
     }
+
     @RequiresPermission(allOf = {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION

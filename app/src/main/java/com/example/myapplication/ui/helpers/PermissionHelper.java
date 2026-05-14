@@ -13,7 +13,7 @@ import androidx.fragment.app.Fragment;
 import java.util.Map;
 
 
-public class PermissionHelper {
+public final class PermissionHelper {
     public static boolean hasPermissions(@Nullable Context context, @NonNull String... permissions) {
         if (context == null) return false;
         for (String permission : permissions) {

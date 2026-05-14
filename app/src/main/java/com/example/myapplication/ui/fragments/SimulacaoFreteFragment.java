@@ -5,12 +5,12 @@ import static com.example.myapplication.ui.helpers.FormatHelper.formatCurrency;
 import static com.example.myapplication.ui.helpers.PermissionHelper.hasPermissions;
 import static com.example.myapplication.ui.helpers.PermissionHelper.register;
 import static com.example.myapplication.ui.helpers.PermissionHelper.request;
-import static com.example.myapplication.ui.helpers.TextWatcherHelper.SimpleTextWatcher;
+import static com.example.myapplication.ui.helpers.TextWatcherHelper.simpleTextWatcher;
 import static com.example.myapplication.ui.helpers.ViewHelper.clearText;
-import static com.example.myapplication.ui.helpers.ViewHelper.getDouble;
 import static com.example.myapplication.ui.helpers.ViewHelper.isEmpty;
 import static com.example.myapplication.ui.helpers.ViewHelper.isNotEmpty;
 import static com.example.myapplication.ui.helpers.ViewHelper.orElse;
+import static com.example.myapplication.ui.helpers.ViewHelper.parseDouble;
 import static com.example.myapplication.ui.helpers.ViewHelper.setText;
 import static com.example.myapplication.ui.helpers.ViewHelper.setVisible;
 
@@ -145,7 +145,7 @@ public class SimulacaoFreteFragment extends Fragment {
     }
 
     private void configurarWatcherDeDistanciaManual() {
-        distanciaManualWatcher = SimpleTextWatcher(this::aoAlterarDistanciaManual);
+        distanciaManualWatcher = simpleTextWatcher(this::aoAlterarDistanciaManual);
         binding.entradaTextoDistancia.addTextChangedListener(distanciaManualWatcher);
     }
 
@@ -400,7 +400,7 @@ public class SimulacaoFreteFragment extends Fragment {
     }
 
     private double lerDistanciaManual() {
-        return getDouble(binding.entradaTextoDistancia);
+        return parseDouble(binding.entradaTextoDistancia);
     }
 
     private boolean isRotaDefinida() {

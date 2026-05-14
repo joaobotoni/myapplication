@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
-public class TaskHelper {
+public final class TaskHelper {
 
     private final ExecutorService executor;
     private final Handler handler;
@@ -35,8 +35,6 @@ public class TaskHelper {
             }
         });
     }
-
-
     public void cancelAll() {
         executor.shutdownNow();
     }

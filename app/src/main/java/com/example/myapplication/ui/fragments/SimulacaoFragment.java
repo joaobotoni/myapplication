@@ -2,10 +2,11 @@ package com.example.myapplication.ui.fragments;
 
 import static com.example.myapplication.ui.helpers.FormatHelper.formatCurrency;
 import static com.example.myapplication.ui.helpers.FormatHelper.formatInteger;
-import static com.example.myapplication.ui.helpers.TextWatcherHelper.SimpleTextWatcher;
+
+import static com.example.myapplication.ui.helpers.TextWatcherHelper.simpleTextWatcher;
 import static com.example.myapplication.ui.helpers.ViewHelper.anyEmpty;
-import static com.example.myapplication.ui.helpers.ViewHelper.getFloat;
-import static com.example.myapplication.ui.helpers.ViewHelper.getInt;
+import static com.example.myapplication.ui.helpers.ViewHelper.parseFloat;
+import static com.example.myapplication.ui.helpers.ViewHelper.parseInt;
 import static com.example.myapplication.ui.helpers.ViewHelper.setText;
 
 import android.os.Bundle;
@@ -68,8 +69,8 @@ public class SimulacaoFragment extends Fragment {
     }
 
     private void configurarTextWatcherEntradas() {
-        binding.campoPesoEntrada.addTextChangedListener(SimpleTextWatcher(this::aoAlterarEntrada));
-        binding.campoQuantidadeEntrada.addTextChangedListener(SimpleTextWatcher(this::aoAlterarEntrada));
+        binding.campoPesoEntrada.addTextChangedListener(simpleTextWatcher(this::aoAlterarEntrada));
+        binding.campoQuantidadeEntrada.addTextChangedListener(simpleTextWatcher(this::aoAlterarEntrada));
     }
 
     private void configurarAcaoBotaoProsseguir() {
@@ -164,11 +165,11 @@ public class SimulacaoFragment extends Fragment {
     }
 
     private int obterCargaTotal() {
-        return getInt(binding.campoQuantidadeEntrada);
+        return parseInt(binding.campoQuantidadeEntrada);
     }
 
     private BigDecimal obterPesoMedio() {
-        return new BigDecimal(getFloat(binding.campoPesoEntrada));
+        return new BigDecimal(parseFloat(binding.campoPesoEntrada));
     }
 
     private boolean isEntradaValida() {

@@ -10,7 +10,8 @@ import androidx.core.content.ContextCompat;
 import com.example.myapplication.R;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-public class AlertHelper {
+
+public final class AlertHelper {
 
     public static void showSnackBarSucesso(View view, String message) {
         if (view != null && message != null) {

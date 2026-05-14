@@ -19,17 +19,18 @@ public final class DecimalUtil {
     public static final RoundingMode ARREDONDAMENTO_FINANCEIRO = RoundingMode.HALF_UP;
     public static final RoundingMode ARREDONDAMENTO_TRUNCADO = RoundingMode.DOWN;
 
-    // Escala de calculos
+    // Escalas
     public static final int ESCALA_CALCULO = 15;
     public static final int ESCALA_MONETARIA = 2;
     public static final int ESCALA_PERCENTUAL = 4;
+
+    // Contextos matemáticos
     public static final MathContext CONTEXTO_CALCULO = new MathContext(ESCALA_CALCULO, ARREDONDAMENTO_PADRAO);
     public static final MathContext CONTEXTO_FINANCEIRO = new MathContext(ESCALA_MONETARIA, ARREDONDAMENTO_FINANCEIRO);
 
-    // Formatação Monetaria
-    public static final DecimalFormatSymbols SYMBOLS = new DecimalFormatSymbols(LOCALE_BR);
-    public static final DecimalFormat CURRENCY_FORMAT = new DecimalFormat("#,##0.00", SYMBOLS);
     public static final double MAX_VALUE = Double.MAX_VALUE;
 
-
+    public static DecimalFormat createCurrencyFormat() {
+        return new DecimalFormat("#,##0.00", new DecimalFormatSymbols(LOCALE_BR));
+    }
 }

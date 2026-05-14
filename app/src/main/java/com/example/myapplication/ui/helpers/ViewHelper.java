@@ -1,7 +1,5 @@
 package com.example.myapplication.ui.helpers;
 
-import static com.example.myapplication.ui.helpers.FormatHelper.getDecimal;
-
 import android.content.Context;
 import android.text.TextWatcher;
 import android.view.View;
@@ -21,7 +19,11 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class ViewHelper {
+public final class ViewHelper {
+
+    private ViewHelper() {
+        throw new AssertionError("ViewHelper is a utility class and must not be instantiated.");
+    }
 
     @NonNull
     public static String requireText(@Nullable TextView view) {
@@ -30,23 +32,23 @@ public class ViewHelper {
     }
 
     @NonNull
-    public static Integer getInt(@Nullable EditText view) {
-        return FormatHelper.getInt(requireText(view));
+    public static Integer parseInt(@Nullable EditText view) {
+        return FormatHelper.parseInt(requireText(view));
     }
 
     @NonNull
-    public static Float getFloat(@Nullable EditText view) {
-        return FormatHelper.getFloat(requireText(view));
+    public static Float parseFloat(@Nullable EditText view) {
+        return FormatHelper.parseFloat(requireText(view));
     }
 
     @NonNull
-    public static Double getDouble(@Nullable EditText view) {
-        return FormatHelper.getDouble(requireText(view));
+    public static Double parseDouble(@Nullable EditText view) {
+        return FormatHelper.parseDouble(requireText(view));
     }
 
     @NonNull
-    public static BigDecimal getBigDecimal(@Nullable EditText view) {
-        return getDecimal(requireText(view));
+    public static BigDecimal parseDecimal(@Nullable EditText view) {
+        return FormatHelper.parseDecimal(requireText(view));
     }
 
     public static <T> boolean isEmpty(@Nullable T value) {
@@ -92,12 +94,11 @@ public class ViewHelper {
         textView.setText(text != null ? text.trim() : "");
     }
 
-    public static void setHelperText(@NonNull TextInputLayout textInputLayout, @Nullable String text) {
-        textInputLayout.setHelperText(text != null ? text.trim() : "");
+    public static void setHelperText(@NonNull TextInputLayout layout, @Nullable String text) {
+        layout.setHelperText(text != null ? text.trim() : "");
     }
 
-    public static void setPluralText(@NonNull TextView textView, @NonNull Context context,
-                                     @PluralsRes int resId, @Nullable Integer quantity) {
+    public static void setPluralText(@NonNull TextView textView, @NonNull Context context, @PluralsRes int resId, @Nullable Integer quantity) {
         if (quantity == null) {
             textView.setText("");
             return;
@@ -140,17 +141,16 @@ public class ViewHelper {
         return chip != null ? chip.getText().toString() : null;
     }
 
-
-    public static void clearText(TextView... views) {
+    public static void clearText(@NonNull TextView... views) {
         for (TextView view : views) {
             if (view != null) view.setText("");
         }
     }
 
-    public static void setVisible(boolean visible, View... views) {
+    public static void setVisible(boolean visible, @NonNull View... views) {
         int visibility = visible ? View.VISIBLE : View.GONE;
         for (View view : views) {
-            view.setVisibility(visibility);
+            if (view != null) view.setVisibility(visibility);
         }
     }
 }
