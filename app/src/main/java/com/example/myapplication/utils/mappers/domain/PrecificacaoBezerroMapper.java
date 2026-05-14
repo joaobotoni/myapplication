@@ -1,21 +1,20 @@
 package com.example.myapplication.utils.mappers.domain;
 
 
-
 import com.example.myapplication.data.models.PrecificacaoBezerro;
-import com.example.myapplication.ui.state.SimulacaoState;
+import com.example.myapplication.ui.state.negociacao.CotacaoState;
 import com.example.myapplication.utils.mappers.Mapper;
 
 import javax.inject.Inject;
 
-public class PrecificacaoBezerroMapper implements Mapper<SimulacaoState, PrecificacaoBezerro> {
+public class PrecificacaoBezerroMapper implements Mapper<CotacaoState, PrecificacaoBezerro> {
 
     @Inject
     public PrecificacaoBezerroMapper() {
     }
 
     @Override
-    public PrecificacaoBezerro mapTo(SimulacaoState precificacaoBezerroUiState) {
+    public PrecificacaoBezerro mapTo(CotacaoState precificacaoBezerroUiState) {
         return new PrecificacaoBezerro(
                 precificacaoBezerroUiState.getValorPorKg(),
                 precificacaoBezerroUiState.getValorPorCabeca(),
@@ -25,12 +24,12 @@ public class PrecificacaoBezerroMapper implements Mapper<SimulacaoState, Precifi
     }
 
     @Override
-    public SimulacaoState mapFrom(PrecificacaoBezerro precificacaoBezerro) {
-        return new SimulacaoState(
-                precificacaoBezerro.getValorTotal(),
-                precificacaoBezerro.getValorPorCabeca(),
+    public CotacaoState mapFrom(PrecificacaoBezerro precificacaoBezerro) {
+        return new CotacaoState(
                 precificacaoBezerro.getValorPorKg(),
-                precificacaoBezerro.getQuantidade()
+                precificacaoBezerro.getValorPorCabeca(),
+                precificacaoBezerro.getQuantidade(),
+                precificacaoBezerro.getValorTotal()
         );
     }
 }

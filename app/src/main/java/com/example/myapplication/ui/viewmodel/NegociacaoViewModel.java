@@ -7,20 +7,21 @@ import static com.example.myapplication.utils.DecimalUtil.ESCALA_MONETARIA;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
 import com.example.myapplication.data.models.PrecificacaoBezerro;
 import com.example.myapplication.data.repositories.PrecificacaoBezerroRepository;
 import com.example.myapplication.data.repositories.ValorReferenciaRepository;
+import com.example.myapplication.domain.contract.PrecificacaoBezerroStrategy;
 import com.example.myapplication.domain.implementation.PrecificacaoBezerroImplementation;
-import com.example.myapplication.domain.strategy.PrecificacaoBezerroComFrete;
 import com.example.myapplication.domain.strategy.PrecificacaoBezerroComFreteEComissao;
 import com.example.myapplication.domain.strategy.PrecificacaoBezerroSemFrete;
 import com.example.myapplication.ui.helpers.TaskHelper;
 import com.example.myapplication.ui.state.FreteState;
-import com.example.myapplication.ui.state.negociacao.NegociacaoState;
 import com.example.myapplication.ui.state.negociacao.CotacaoState;
 import com.example.myapplication.ui.state.negociacao.FechamentoState;
+import com.example.myapplication.ui.state.negociacao.NegociacaoState;
 import com.example.myapplication.ui.state.negociacao.PropostaState;
 
 import java.math.BigDecimal;
@@ -39,163 +40,166 @@ public class NegociacaoViewModel extends ViewModel {
 
     @Inject
     public NegociacaoViewModel(PrecificacaoBezerroRepository precificacaoBezerroRepository,
-                               ValorReferenciaRepository valorReferenciaRepository,
-                               TaskHelper taskHelper) {
+                               ValorReferenciaRepository valorReferenciaRepository, TaskHelper taskHelper) {
         this.precificacaoBezerroRepository = precificacaoBezerroRepository;
         this.valorReferenciaRepository = valorReferenciaRepository;
         this.taskHelper = taskHelper;
     }
 
-    public LiveData<NegociacaoState> getState() { return state; }
-    public LiveData<Double> getVariacao() { return variacao; }
-    public LiveData<Throwable> getError() { return error; }
-
-
-    private CotacaoState getCotacao() {
-        NegociacaoState current = state.getValue();
-        return current != null ? current.getCotacao() : null;
+    public LiveData<NegociacaoState> getState() {
+        return state;
     }
 
-    private PropostaState getProposta() {
-        NegociacaoState current = state.getValue();
-        return current != null ? current.getProposta() : null;
+    public LiveData<PropostaState> getProposta() {
+        return Transformations.map(state, s -> s != null ? s.getProposta() : null);
     }
 
-    private FechamentoState getFechamento() {
-        NegociacaoState current = state.getValue();
-        return current != null ? current.getFechamento() : null;
+    public LiveData<FechamentoState> getFechamento() {
+        return Transformations.map(state, s -> s != null ? s.getFechamento() : null);
     }
 
-    public boolean isCotacaoCalculada() {
-        NegociacaoState current = state.getValue();
-        return current != null && current.getCotacao() != null;
+    public LiveData<Double> getVariacao() {
+        return variacao;
     }
 
-    private NegociacaoState updateState(CotacaoState cotacao, PropostaState proposta, FechamentoState fechamento) {
+    public LiveData<Throwable> getError() {
+        return error;
+    }
+
+    public void processarProposta(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
+        taskHelper.execute(
+                () -> criarNegociacao(cotacao, peso, quantidade, freteTotalLote, freteState, comissaoTotal),
+                state::postValue,
+                error::postValue
+        );
+    }
+
+    public void processarFechamento(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
+        taskHelper.execute(
+                () -> criarNegociacao(cotacao, peso, quantidade, freteTotalLote, freteState, comissaoTotal),
+                negociacaoState -> {
+                    state.postValue(negociacaoState);
+                    variacao.postValue(calcularVariacao(negociacaoState.getCotacao(), negociacaoState.getFechamento()));
+                },
+                error::postValue
+        );
+    }
+
+    public void recalcularPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento,
+                                        BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade,
+                                        BigDecimal fretePorKg, FreteState freteState) {
+        taskHelper.execute(
+                () -> atualizarPropostaPorKg(cotacao, fechamento, novoValorPorKg, peso, quantidade, fretePorKg, freteState),
+                state::postValue,
+                error::postValue
+        );
+    }
+
+    public void recalcularPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento,
+                                            BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade,
+                                            BigDecimal fretePorKg, FreteState freteState) {
+        taskHelper.execute(
+                () -> atualizarPropostaPorCabeca(cotacao, fechamento, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState),
+                state::postValue,
+                error::postValue
+        );
+    }
+
+    public void limpar(CotacaoState cotacao) {
+        state.setValue(new NegociacaoState(cotacao, null, null));
+    }
+
+    public void limparVariacao() {
+        variacao.postValue(0.0);
+    }
+
+    private NegociacaoState criarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
+        BigDecimal fretePorKg = distribuirFretePorKg(freteTotalLote, peso, quantidade);
+        PropostaState proposta = precificarProposta(peso, quantidade, fretePorKg, freteState);
+        BigDecimal comissaoPorKg = distribuirComissaoPorKg(comissaoTotal, peso);
+        FechamentoState fechamento = precificarFechamento(peso, quantidade, comissaoPorKg);
         return new NegociacaoState(cotacao, proposta, fechamento);
     }
 
-
-    public void processarCotacao(BigDecimal peso, Integer quantidade) {
-        taskHelper.execute(() -> calcularCotacao(peso, quantidade), state::postValue, error::postValue);
+    private NegociacaoState atualizarPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+        BigDecimal novoValorPorCabeca = converterKgParaCabeca(novoValorPorKg, peso);
+        return atualizarPropostaEFechamento(cotacao, fechamento, novoValorPorKg, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState);
     }
 
-    public void processarProposta(BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState) {
-        taskHelper.execute(() -> calcularProposta(peso, quantidade, freteTotalLote, freteState), state::postValue, error::postValue);
+    private NegociacaoState atualizarPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+        BigDecimal novoValorPorKg = converterCabecaParaKg(novoValorPorCabeca, peso);
+        return atualizarPropostaEFechamento(cotacao, fechamento, novoValorPorKg, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState);
     }
 
-    public void processarFechamento(BigDecimal peso, Integer quantidade, BigDecimal comissaoTotal) {
-        taskHelper.execute(() -> calcularFechamento(peso, quantidade, comissaoTotal), negociacaoState -> {
-            state.postValue(negociacaoState);
-            variacao.postValue(calcularVariacaoPercentual(negociacaoState.getCotacao().getValorTotal(), negociacaoState.getFechamento().getValorTotal()));
-        }, error::postValue);
+    private NegociacaoState atualizarPropostaEFechamento(CotacaoState cotacao, FechamentoState fechamento, BigDecimal valorPorKg, BigDecimal valorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+        PropostaState propostaReajustada = novaProposta(valorPorKg, valorPorCabeca, quantidade, fretePorKg, freteState);
+        FechamentoState fechamentoReajustado = atualizarFechamento(fechamento, valorPorKg, fretePorKg, peso, quantidade);
+        return new NegociacaoState(cotacao, propostaReajustada, fechamentoReajustado);
     }
 
-    public void recalcularPropostaPorKg(BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade) {
-        taskHelper.execute(() -> calcularPropostaPorKg(novoValorPorKg, peso, quantidade), state::postValue, error::postValue);
+    private PropostaState precificarProposta(BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+        PrecificacaoBezerro p = precificar(new PrecificacaoBezerroSemFrete(precificacaoBezerroRepository, fretePorKg), peso, quantidade);
+        return novaProposta(p.getValorPorKg(), p.getValorPorCabeca(), quantidade, fretePorKg, freteState);
     }
 
-    public void recalcularPropostaPorCabeca(BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade) {
-        taskHelper.execute(() -> calcularPropostaPorCabeca(novoValorPorCabeca, peso, quantidade), state::postValue, error::postValue);
+    private FechamentoState precificarFechamento(BigDecimal peso, Integer quantidade, BigDecimal comissaoPorKg) {
+        PrecificacaoBezerro p = precificar(new PrecificacaoBezerroComFreteEComissao(precificacaoBezerroRepository, comissaoPorKg), peso, quantidade);
+        return novoFechamento(p.getValorPorKg(), p.getValorPorCabeca(), p.getValorTotal(), comissaoPorKg);
     }
 
-    private NegociacaoState calcularCotacao(BigDecimal peso, Integer quantidade) {
-        PrecificacaoBezerro precificacao = precificarBezerroComFrete(peso, quantidade);
-        CotacaoState cotacao = new CotacaoState(precificacao.getValorPorKg(), precificacao.getValorPorCabeca(), precificacao.getValorTotal());
-        return updateState(cotacao, getProposta(), getFechamento());
+    private PrecificacaoBezerro precificar(PrecificacaoBezerroStrategy strategy, BigDecimal peso, Integer quantidade) {
+        return new PrecificacaoBezerroImplementation(strategy, valorReferenciaRepository).executar(peso, quantidade);
     }
 
-    private NegociacaoState calcularProposta(BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState) {
-        BigDecimal fretePorKg = converterFreteTotalParaPorKg(freteTotalLote, peso, quantidade);
-        PrecificacaoBezerro precificacao = precificarBezerroSemFrete(peso, quantidade, fretePorKg);
-        PropostaState proposta = new PropostaState(precificacao.getValorPorKg(), precificacao.getValorPorCabeca(), precificacao.getValorTotal(), fretePorKg, freteState);
-        return updateState(getCotacao(), proposta, getFechamento());
+    private PropostaState novaProposta(BigDecimal valorPorKg, BigDecimal valorPorCabeca, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+        return new PropostaState(valorPorKg, valorPorCabeca, calcularTotalLote(valorPorCabeca, quantidade), fretePorKg, freteState);
     }
 
-    private NegociacaoState calcularFechamento(BigDecimal peso, Integer quantidade, BigDecimal comissaoTotal) {
-        BigDecimal comissaoPorKg = converterComissaoTotalParaPorKg(comissaoTotal, peso);
-        PrecificacaoBezerro precificacao = precificarBezerroComFreteEComissao(peso, quantidade, comissaoPorKg);
-        FechamentoState fechamento = new FechamentoState(precificacao.getValorPorKg(), precificacao.getValorPorCabeca(), precificacao.getValorTotal(), comissaoPorKg);
-        return updateState(getCotacao(), getProposta(), fechamento);
+    private FechamentoState novoFechamento(BigDecimal valorPorKg, BigDecimal valorPorCabeca, BigDecimal valorTotal, BigDecimal comissaoPorKg) {
+        return new FechamentoState(valorPorKg, valorPorCabeca, valorTotal, comissaoPorKg);
     }
 
-    private NegociacaoState calcularPropostaPorKg(BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade) {
-        PropostaState proposta = getProposta();
-        if (proposta == null) return state.getValue();
-        BigDecimal novoValorPorCabeca = novoValorPorKg.multiply(peso).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
-        BigDecimal novoValorTotal = novoValorPorCabeca.multiply(BigDecimal.valueOf(quantidade)).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
-        PropostaState novaPropostaState = new PropostaState(novoValorPorKg, novoValorPorCabeca, novoValorTotal, proposta.getFretePorKg(), proposta.getFreteState());
-        return recalcularFechamentoSobreProposta(novoValorPorKg, peso, quantidade, novaPropostaState);
+    private FechamentoState atualizarFechamento(FechamentoState fechamento, BigDecimal valorPorKgProposta, BigDecimal fretePorKg, BigDecimal peso, Integer quantidade) {
+        if (fechamento == null || fechamento.getComissaoPorKg() == null) return fechamento;
+        BigDecimal novoValorPorKg = valorPorKgProposta.add(fretePorKg).add(fechamento.getComissaoPorKg()).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
+        BigDecimal novoValorPorCabeca = converterKgParaCabeca(novoValorPorKg, peso);
+        return new FechamentoState(novoValorPorKg, novoValorPorCabeca, calcularTotalLote(novoValorPorCabeca, quantidade), fechamento.getComissaoPorKg());
     }
 
-    private NegociacaoState calcularPropostaPorCabeca(BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade) {
-        PropostaState proposta = getProposta();
-        if (proposta == null) return state.getValue();
-        BigDecimal novoValorPorKg = novoValorPorCabeca.divide(peso, ESCALA_CALCULO, ARREDONDAMENTO_PADRAO).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
-        BigDecimal novoValorTotal = novoValorPorCabeca.multiply(BigDecimal.valueOf(quantidade)).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
-        PropostaState novaPropostaState = new PropostaState(novoValorPorKg, novoValorPorCabeca, novoValorTotal, proposta.getFretePorKg(), proposta.getFreteState());
-        return recalcularFechamentoSobreProposta(novoValorPorKg, peso, quantidade, novaPropostaState);
-    }
-
-    private NegociacaoState recalcularFechamentoSobreProposta(BigDecimal valorPorKgProposta, BigDecimal peso, Integer quantidade, PropostaState novaPropostaState) {
-        FechamentoState fechamento = getFechamento();
-        if (fechamento == null || fechamento.getComissaoPorKg() == null) {
-            return updateState(getCotacao(), novaPropostaState, fechamento);
-        }
-        BigDecimal comissaoPorKg = fechamento.getComissaoPorKg();
-        BigDecimal fretePorKg = novaPropostaState.getFretePorKg();
-        BigDecimal novoValorPorKg = valorPorKgProposta.add(fretePorKg).add(comissaoPorKg).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
-        BigDecimal novoValorPorCabeca = novoValorPorKg.multiply(peso).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
-        BigDecimal novoValorTotal = novoValorPorCabeca.multiply(BigDecimal.valueOf(quantidade)).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
-        FechamentoState novoFechamento = new FechamentoState(novoValorPorKg, novoValorPorCabeca, novoValorTotal, comissaoPorKg);
-        return updateState(getCotacao(), novaPropostaState, novoFechamento);
-    }
-
-    private PrecificacaoBezerro precificarBezerroComFrete(BigDecimal peso, Integer quantidade) {
-        return new PrecificacaoBezerroImplementation(
-                new PrecificacaoBezerroComFrete(precificacaoBezerroRepository),
-                valorReferenciaRepository).executar(peso, quantidade);
-    }
-
-    private PrecificacaoBezerro precificarBezerroSemFrete(BigDecimal peso, Integer quantidade, BigDecimal fretePorKg) {
-        return new PrecificacaoBezerroImplementation(
-                new PrecificacaoBezerroSemFrete(precificacaoBezerroRepository, fretePorKg),
-                valorReferenciaRepository).executar(peso, quantidade);
-    }
-
-    private PrecificacaoBezerro precificarBezerroComFreteEComissao(BigDecimal peso, Integer quantidade, BigDecimal comissaoPorKg) {
-        return new PrecificacaoBezerroImplementation(
-                new PrecificacaoBezerroComFreteEComissao(precificacaoBezerroRepository, comissaoPorKg),
-                valorReferenciaRepository).executar(peso, quantidade);
-    }
-
-    private double calcularVariacaoPercentual(BigDecimal valorPedido, BigDecimal valorFinal) {
-        return valorFinal.subtract(valorPedido).divide(valorPedido, ESCALA_CALCULO, ARREDONDAMENTO_PADRAO).multiply(CEM)
-                .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO).doubleValue();
-    }
-
-    private BigDecimal converterFreteTotalParaPorKg(BigDecimal freteTotalLote, BigDecimal peso, Integer quantidade) {
+    private BigDecimal distribuirFretePorKg(BigDecimal freteTotalLote, BigDecimal peso, Integer quantidade) {
         BigDecimal pesoTotal = peso.multiply(BigDecimal.valueOf(quantidade));
         if (pesoTotal.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
         return freteTotalLote.divide(pesoTotal, ESCALA_CALCULO, ARREDONDAMENTO_PADRAO)
                 .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
     }
 
-    private BigDecimal converterComissaoTotalParaPorKg(BigDecimal comissaoTotal, BigDecimal peso) {
+    private BigDecimal distribuirComissaoPorKg(BigDecimal comissaoTotal, BigDecimal peso) {
         if (peso.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
         return comissaoTotal.divide(peso, ESCALA_CALCULO, ARREDONDAMENTO_PADRAO)
                 .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
     }
 
-    public void limpar() {
-        state.postValue(new NegociacaoState(
-                getCotacao(),
-                new PropostaState(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, FreteState.NAO_SELECIONADO),
-                new FechamentoState(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO)
-        ));
+    private BigDecimal converterKgParaCabeca(BigDecimal valorPorKg, BigDecimal peso) {
+        return valorPorKg.multiply(peso).setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
     }
 
-    public void limparVariacao() {
-        variacao.postValue(0.0);
+    private BigDecimal converterCabecaParaKg(BigDecimal valorPorCabeca, BigDecimal peso) {
+        return valorPorCabeca.divide(peso, ESCALA_CALCULO, ARREDONDAMENTO_PADRAO)
+                .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
+    }
+
+    private BigDecimal calcularTotalLote(BigDecimal valorPorCabeca, Integer quantidade) {
+        return valorPorCabeca.multiply(BigDecimal.valueOf(quantidade))
+                .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
+    }
+
+    private double calcularVariacao(CotacaoState cotacao, FechamentoState fechamentoState) {
+        BigDecimal valorCotacao = cotacao.getValorTotal();
+        BigDecimal valorFechamento = fechamentoState.getValorTotal();
+        return valorFechamento.subtract(valorCotacao)
+                .divide(valorCotacao, ESCALA_CALCULO, ARREDONDAMENTO_PADRAO)
+                .multiply(CEM)
+                .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO)
+                .doubleValue();
     }
 }

@@ -40,7 +40,6 @@ import com.example.myapplication.ui.state.animal.EspecificacaoAnimalState;
 import com.example.myapplication.ui.state.animal.RacaState;
 import com.example.myapplication.ui.state.negociacao.CotacaoState;
 import com.example.myapplication.ui.state.negociacao.FechamentoState;
-import com.example.myapplication.ui.state.negociacao.NegociacaoState;
 import com.example.myapplication.ui.state.negociacao.PropostaState;
 import com.example.myapplication.ui.viewmodel.AnimalViewModel;
 import com.example.myapplication.ui.viewmodel.CategoriaViewModel;
@@ -49,6 +48,7 @@ import com.example.myapplication.ui.viewmodel.EmpresaViewModel;
 import com.example.myapplication.ui.viewmodel.NegociacaoViewModel;
 import com.example.myapplication.ui.viewmodel.PrecificacaoFreteViewModel;
 import com.example.myapplication.ui.viewmodel.RacaViewModel;
+import com.example.myapplication.ui.viewmodel.SimulacaoViewModel;
 import com.example.myapplication.ui.viewmodel.TransporteViewModel;
 
 import java.math.BigDecimal;
@@ -59,26 +59,36 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class NegociacaoFragment extends Fragment {
+
     private FragmentNegociacaoBinding binding;
     private CategoriaAdapter categoriaAdapter;
     private RacaAdapter racaAdapter;
+
     private RacaViewModel racaViewModel;
     private CategoriaViewModel categoriaViewModel;
     private TransporteViewModel transporteViewModel;
     private CorretorViewModel corretorViewModel;
     private EmpresaViewModel empresaViewModel;
+    private SimulacaoViewModel simulacaoViewModel;
     private NegociacaoViewModel negociacaoViewModel;
     private PrecificacaoFreteViewModel precificacaoFreteViewModel;
     private AnimalViewModel animalViewModel;
+
     private TextWatcher freteTextWatcher;
     private TextWatcher especificacaoTextWatcher;
     private TextWatcher valorCabecaTextWatcher;
     private TextWatcher valorKgTextWatcher;
+
     private double peso;
     private int quantidade;
+
+    private CotacaoState cotacaoAtual;
+    private PropostaState propostaAtual;
+    private FechamentoState fechamentoAtual;
+    private PrecificacaoFreteState freteAtual;
+    private CorretorState corretorAtual;
     private CategoriaState categoriaAtual;
     private RacaState racaAtual;
-
 
     @Nullable
     @Override
@@ -87,7 +97,6 @@ public class NegociacaoFragment extends Fragment {
         binding = FragmentNegociacaoBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
-
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -108,7 +117,7 @@ public class NegociacaoFragment extends Fragment {
         configurarComportamentosDeTela();
         configurarEventosDeClique();
         observarEstadosDasViewModels();
-        processarCotacaoSeNecessario();
+        processarCotacao();
     }
 
     private void extrairArgumentosDeNavegacao() {
@@ -118,19 +127,28 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void iniciarDadosEspecificacao() {
-        atualizarQuantidadeAnimais();
-        atualizarPesoMedioAnimais();
+        exibirQuantidadeAnimais();
+        exibirPesoMedioAnimais();
     }
 
     private void inicializarDependencias() {
+        inicializarViewModels();
+        inicializarTextWatchers();
+    }
+
+    private void inicializarViewModels() {
         racaViewModel = new ViewModelProvider(requireActivity()).get(RacaViewModel.class);
         categoriaViewModel = new ViewModelProvider(requireActivity()).get(CategoriaViewModel.class);
         transporteViewModel = new ViewModelProvider(requireActivity()).get(TransporteViewModel.class);
         corretorViewModel = new ViewModelProvider(requireActivity()).get(CorretorViewModel.class);
         empresaViewModel = new ViewModelProvider(requireActivity()).get(EmpresaViewModel.class);
+        simulacaoViewModel = new ViewModelProvider(requireActivity()).get(SimulacaoViewModel.class);
         negociacaoViewModel = new ViewModelProvider(requireActivity()).get(NegociacaoViewModel.class);
         precificacaoFreteViewModel = new ViewModelProvider(requireActivity()).get(PrecificacaoFreteViewModel.class);
         animalViewModel = new ViewModelProvider(requireActivity()).get(AnimalViewModel.class);
+    }
+
+    private void inicializarTextWatchers() {
         freteTextWatcher = TextWatcherHelper.MoneyTextWatcher(this::aoFreteManualAlterado);
         especificacaoTextWatcher = TextWatcherHelper.SimpleTextWatcher(this::aoEspecificacaoAlterada);
         valorCabecaTextWatcher = TextWatcherHelper.MoneyTextWatcher(this::aoValorCabecaAlterado);
@@ -138,13 +156,14 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void configurarComportamentosDeTela() {
+        configurarRecyclerViews();
+        configurarTextWatchers();
+        configurarChipGroupSexo();
+    }
+
+    private void configurarRecyclerViews() {
         configurarRecyclerViewRacas();
         configurarRecyclerViewCategorias();
-        configurarTextWatcherFrete();
-        configurarTextWatcherIdade();
-        configurarTextWatcherValorCabeca();
-        configurarTextWatcherValorKg();
-        configurarChipGroupSexo();
     }
 
     private void configurarRecyclerViewRacas() {
@@ -157,9 +176,17 @@ public class NegociacaoFragment extends Fragment {
         configurarRecyclerViewHorizontal(binding.listaCategorias, categoriaAdapter);
     }
 
-    private void configurarRecyclerViewHorizontal(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.Adapter<?> adapter) {
+    private void configurarRecyclerViewHorizontal(@NonNull RecyclerView recyclerView,
+                                                  @NonNull RecyclerView.Adapter<?> adapter) {
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerView.setAdapter(adapter);
+    }
+
+    private void configurarTextWatchers() {
+        configurarTextWatcherFrete();
+        configurarTextWatcherIdade();
+        configurarTextWatcherValorCabeca();
+        configurarTextWatcherValorKg();
     }
 
     private void configurarTextWatcherFrete() {
@@ -223,196 +250,239 @@ public class NegociacaoFragment extends Fragment {
     }
 
     private void observarEstadosDasViewModels() {
-        observarEstadoDasRacas();
-        observarEstadoDasCategorias();
-        observarEstadoDaNegociacao();
-        observarEstadoDoCorretor();
-        observarEstadoDaEmpresa();
-        observarEstadoDoFrete();
-        observarVariacaoPercentual();
-        observarEstadoDoAnimal();
+        observarCategorias();
+        observarRacas();
+        observarAnimal();
+        observarCotacao();
+        observarCorretor();
+        observarProposta();
+        observarFechamento();
+        observarFrete();
+        observarVariacao();
+        observarEmpresa();
     }
 
-    private void observarEstadoDasRacas() {
-        racaViewModel.getState().observe(getViewLifecycleOwner(), this::atualizarListaRacas);
-        racaViewModel.getRacaSelecionada().observe(getViewLifecycleOwner(), this::aoAlterarRacaSelecionada);
+    private void observarRacas() {
+        racaViewModel.getState().observe(getViewLifecycleOwner(), this::onListaRacasAtualizada);
+        racaViewModel.getRacaSelecionada().observe(getViewLifecycleOwner(), this::onRacaSelecionada);
     }
 
-    private void observarEstadoDasCategorias() {
-        categoriaViewModel.getState().observe(getViewLifecycleOwner(), this::atualizarListaCategorias);
-        categoriaViewModel.getCategoriaSelecionada().observe(getViewLifecycleOwner(), this::aoAlterarCategoriaSelecionada);
+    private void observarCategorias() {
+        categoriaViewModel.getState().observe(getViewLifecycleOwner(), this::onListaCategoriasAtualizada);
+        categoriaViewModel.getCategoriaSelecionada().observe(getViewLifecycleOwner(), this::onCategoriaSelecionada);
     }
 
-    private void observarEstadoDaNegociacao() {
-        negociacaoViewModel.getState().observe(getViewLifecycleOwner(), this::atualizarTabela);
+    private void observarCotacao() {
+        simulacaoViewModel.getState().observe(getViewLifecycleOwner(), this::onCotacaoAtualizada);
     }
 
-    private void observarEstadoDoCorretor() {
-        corretorViewModel.getCorretorSelecionado().observe(getViewLifecycleOwner(), this::aoSelecionarCorretorNaLista);
+    private void observarProposta() {
+        negociacaoViewModel.getProposta().observe(getViewLifecycleOwner(), this::onPropostaAtualizada);
     }
 
-    private void observarEstadoDaEmpresa() {
-        empresaViewModel.getEmpresaSelecionada().observe(getViewLifecycleOwner(), this::aoSelecionarEmpresaNaLista);
+    private void observarFechamento() {
+        negociacaoViewModel.getFechamento().observe(getViewLifecycleOwner(), this::onFechamentoAtualizado);
     }
 
-    private void observarEstadoDoFrete() {
-        precificacaoFreteViewModel.getState().observe(getViewLifecycleOwner(), this::atualizarEstadoCardFrete);
+    private void observarFrete() {
+        precificacaoFreteViewModel.getState().observe(getViewLifecycleOwner(), this::onFreteAtualizado);
     }
 
-    private void observarVariacaoPercentual() {
+    private void observarVariacao() {
         negociacaoViewModel.getVariacao().observe(getViewLifecycleOwner(), this::exibirVariacaoPercentual);
     }
 
-    private void observarEstadoDoAnimal() {
-        animalViewModel.getAnimalState().observe(getViewLifecycleOwner(), this::restaurarEstadoAnimal);
+    private void observarCorretor() {
+        corretorViewModel.getCorretorSelecionado().observe(getViewLifecycleOwner(), this::onCorretorSelecionado);
+    }
+
+    private void observarEmpresa() {
+        empresaViewModel.getEmpresaSelecionada().observe(getViewLifecycleOwner(), this::onEmpresaSelecionada);
+    }
+
+    private void observarAnimal() {
+        animalViewModel.getAnimalState().observe(getViewLifecycleOwner(), this::onAnimalAtualizado);
+    }
+
+    private void onListaRacasAtualizada(@NonNull List<RacaState> racas) {
+        racaAdapter.submitList(racas);
+    }
+
+    private void onListaCategoriasAtualizada(@NonNull List<CategoriaState> categorias) {
+        categoriaAdapter.submitList(categorias);
+    }
+
+    private void onRacaSelecionada(@Nullable RacaState raca) {
+        racaAtual = raca;
+        if (isRacaNaoSelecionada(raca)) return;
+        animalViewModel.atualizarRaca(raca);
+    }
+
+    private void onCategoriaSelecionada(@Nullable CategoriaState categoria) {
+        categoriaAtual = categoria;
+        if (isCategoriaNaoSelecionada(categoria)) return;
+        animalViewModel.atualizarCategoria(categoria);
+        transporteViewModel.recomendar(categoria.getId(), quantidade);
+    }
+
+    private void onCotacaoAtualizada(@Nullable CotacaoState cotacao) {
+        cotacaoAtual = cotacao;
+        atualizarValoresCotado(cotacao);
+    }
+
+    private void onPropostaAtualizada(@Nullable PropostaState proposta) {
+        propostaAtual = proposta;
+        atualizarValoresPedido(proposta);
+    }
+
+    private void onFechamentoAtualizado(@Nullable FechamentoState fechamento) {
+        fechamentoAtual = fechamento;
+        atualizarValoresFechamento(fechamento);
+    }
+
+    private void onFreteAtualizado(@Nullable PrecificacaoFreteState frete) {
+        freteAtual = frete;
+        atualizarEstadoCardFrete(frete);
+    }
+
+    private void onCorretorSelecionado(@Nullable CorretorState corretor) {
+        corretorAtual = corretor;
+        if (isCorretorNaoSelecionado(corretor)) {
+            limparVariacao();
+            limparCardCorretor();
+            return;
+        }
+        exibirDadosCorretor(corretor);
+        processarFechamento(corretor);
+    }
+
+    private void onEmpresaSelecionada(@Nullable EmpresaState empresa) {
+        if (isEmpresaNaoSelecionada(empresa)) return;
+        exibirNomeEmpresa(empresa.getNome());
+    }
+
+    private void onAnimalAtualizado(@Nullable AnimalState animal) {
+        if (animal == null) return;
+        restaurarEspecificacao(animal.getEspecificacao());
     }
 
     private void aoFreteManualAlterado() {
-        if (isCampoFreteVazio()) {
+        if (isCampoFreteVazio() || isValorZero(obterValorTotalFrete())) {
             limparFreteEDependencias();
             return;
         }
-        precificacaoFreteViewModel.calcularIncidencia(obterValorTotalFrete(), BigDecimal.valueOf(peso), quantidade, FreteState.MANUAL);
+        calcularIncidenciaFreteManual();
     }
 
     private void aoValorCabecaAlterado() {
-        if (isCampoValorCabecaVazio()) {
-            limparVariacao();
-            limparCardCorretor();
-            limparSelecaoCorretor();
-            restaurarPlaceholderFechamento();
-            return;
-        }
-        negociacaoViewModel.recalcularPropostaPorCabeca(obterValorPorCabeca(), BigDecimal.valueOf(peso), quantidade);
+        recalcularPorCabeca(obterValorPorCabeca(), cotacaoAtual, fechamentoAtual, freteAtual);
     }
 
     private void aoValorKgAlterado() {
-        if (isCampoValorKgVazio()) {
-            limparVariacao();
-            limparCardCorretor();
-            limparSelecaoCorretor();
-            restaurarPlaceholderFechamento();
-            return;
-        }
-        negociacaoViewModel.recalcularPropostaPorKg(obterValorPorKg(), BigDecimal.valueOf(peso), quantidade);
+        recalcularPorKg(obterValorPorKg(), cotacaoAtual, fechamentoAtual, freteAtual);
     }
 
     private void aoEspecificacaoAlterada() {
         animalViewModel.atualizarEspecificacao(obterValorSexoSelecionado(), obterTextoIdade());
     }
 
-    private void aoAlterarCategoriaSelecionada(@Nullable CategoriaState categoriaState) {
-        categoriaAtual = categoriaState;
-        if (isCategoriaNaoSelecionada(categoriaState)) return;
-        animalViewModel.atualizarCategoria(categoriaState);
-        transporteViewModel.recomendar(categoriaAtual.getId(), quantidade);
+    private void aoSelecionarRacaNaLista(@NonNull RacaState raca) {
+        racaViewModel.selecionarRaca(raca);
     }
 
-    private void aoAlterarRacaSelecionada(@Nullable RacaState racaState) {
-        racaAtual = racaState;
-        if (isRacaNaoSelecionada(racaState)) return;
-        animalViewModel.atualizarRaca(racaState);
+    private void aoSelecionarCategoriaNaLista(@NonNull CategoriaState categoria) {
+        categoriaViewModel.selecionarCategoria(categoria);
     }
 
-    private void aoSelecionarEmpresaNaLista(@Nullable EmpresaState empresaState) {
-        if (isEmpresaNaoSelecionada(empresaState)) return;
-        exibirNomeEmpresa(empresaState.getNome());
+    private void processarCotacao() {
+        simulacaoViewModel.processarCotacao(BigDecimal.valueOf(peso), quantidade);
     }
 
-    private void aoSelecionarRacaNaLista(@NonNull RacaState racaState) {
-        racaViewModel.selecionarRaca(racaState);
+    private void processarProposta(@NonNull PrecificacaoFreteState frete) {
+        if (isCotacaoIndisponivel()) return;
+        negociacaoViewModel.processarProposta(cotacaoAtual, BigDecimal.valueOf(peso), quantidade,
+                frete.getValorTotal(), frete.getFreteState(), obterComissaoTotal());
     }
 
-    private void aoSelecionarCategoriaNaLista(@NonNull CategoriaState categoriaState) {
-        categoriaViewModel.selecionarCategoria(categoriaState);
+    private void processarFechamento(@NonNull CorretorState corretor) {
+        if (isCotacaoIndisponivel() || isFreteIndisponivel()) return;
+        negociacaoViewModel.processarFechamento(cotacaoAtual, BigDecimal.valueOf(peso), quantidade,
+                freteAtual.getValorTotal(), freteAtual.getFreteState(), corretor.getComissao());
     }
 
-    private void aoSelecionarCorretorNaLista(@Nullable CorretorState corretorState) {
-        if (isCorretorNaoSelecionado(corretorState)) {
-            limparValores();
-            limparVariacao();
-            limparCardCorretor();
+    private void calcularIncidenciaFreteManual() {
+        precificacaoFreteViewModel.calcularIncidencia(obterValorTotalFrete(),
+                BigDecimal.valueOf(peso), quantidade, FreteState.MANUAL);
+    }
+
+    private void recalcularPorCabeca(@NonNull BigDecimal valor, @Nullable CotacaoState cotacao,
+                                     @Nullable FechamentoState fechamento,
+                                     @Nullable PrecificacaoFreteState frete) {
+        if (isRecalculoInvalido(valor, cotacao, frete)) {
+            limparProposta();
             return;
         }
-        atualizarEstadoCorretor(corretorState);
-        processarFechamento(corretorState);
+        negociacaoViewModel.recalcularPropostaPorCabeca(cotacao, fechamento, valor,
+                BigDecimal.valueOf(peso), quantidade,
+                obterValorParcialFrete(frete), obterFreteState(frete));
     }
 
-    private void atualizarQuantidadeAnimais() {
-        setText(binding.textoValorQuantidade, String.format(Locale.getDefault(), "%d", quantidade));
+    private void recalcularPorKg(@NonNull BigDecimal valor, @Nullable CotacaoState cotacao,
+                                 @Nullable FechamentoState fechamento,
+                                 @Nullable PrecificacaoFreteState frete) {
+        if (isRecalculoInvalido(valor, cotacao, frete)) {
+            limparProposta();
+            return;
+        }
+        negociacaoViewModel.recalcularPropostaPorKg(cotacao, fechamento, valor,
+                BigDecimal.valueOf(peso), quantidade,
+                obterValorParcialFrete(frete), obterFreteState(frete));
     }
 
-    private void atualizarPesoMedioAnimais() {
-        setText(binding.textoValorPeso, String.format(Locale.getDefault(), "%.2f", peso));
+
+    private void atualizarValoresCotado(@Nullable CotacaoState cotacao) {
+        if (isCotacaoSemEstado(cotacao)) return;
+        preencherCamposEditaveis(cotacao.getValorPorCabeca(), cotacao.getValorPorKg());
+        exibirValorEtapaCotado(formatCurrency(cotacao.getValorPorCabeca()));
+        exibirDescricaoEtapaCotado(formatCurrency(cotacao.getValorPorKg()));
     }
 
-    private void atualizarListaRacas(@NonNull List<RacaState> racas) {
-        racaAdapter.submitList(racas);
-    }
-
-    private void atualizarListaCategorias(@NonNull List<CategoriaState> categorias) {
-        categoriaAdapter.submitList(categorias);
-    }
-
-    private void atualizarTabela(@Nullable NegociacaoState negociacaoState) {
-        if (isNegociacaoSemEstado(negociacaoState)) return;
-        atualizarValoresCotado(negociacaoState.getCotacao());
-        atualizarValoresPedido(negociacaoState.getProposta());
-        atualizarValoresFechamento(negociacaoState.getFechamento());
-    }
-
-    private void atualizarValoresCotado(@Nullable CotacaoState cotacaoState) {
-        if (isCotacaoSemEstado(cotacaoState)) return;
-        preencherCamposEditaveis(cotacaoState.getValorPorCabeca(), cotacaoState.getValorPorKg());
-        exibirValorEtapaCotado(formatCurrency(cotacaoState.getValorPorCabeca()));
-        exibirDescricaoEtapaCotado(formatCurrency(cotacaoState.getValorPorKg()));
-    }
-
-    private void atualizarValoresPedido(@Nullable PropostaState propostaState) {
-        if (isPropostaSemEstado(propostaState) || !isFreteDescontado(propostaState)) {
+    private void atualizarValoresPedido(@Nullable PropostaState proposta) {
+        if (isPropostaSemEstado(proposta) || isFreteNaoDescontado(proposta)) {
             restaurarPlaceholderProposta();
             return;
         }
-        preencherCamposEditaveis(propostaState.getValorPorCabeca(), propostaState.getValorPorKg());
-        exibirValorEtapaPedido(formatCurrency(propostaState.getValorPorCabeca()));
-        exibirDescricaoEtapaPedido(formatCurrency(propostaState.getValorPorKg()));
-        exibirBadgeFrete(formatCurrency(propostaState.getFretePorKg()));
-        exibirValorFornecedor(formatCurrency(propostaState.getValorTotal()));
+        preencherCamposEditaveis(proposta.getValorPorCabeca(), proposta.getValorPorKg());
+        exibirValorEtapaPedido(formatCurrency(proposta.getValorPorCabeca()));
+        exibirDescricaoEtapaPedido(formatCurrency(proposta.getValorPorKg()));
+        exibirBadgeFrete(formatCurrency(proposta.getFretePorKg()));
+        exibirValorFornecedor(formatCurrency(proposta.getValorTotal()));
     }
 
-    private void atualizarValoresFechamento(@Nullable FechamentoState fechamentoState) {
-        if (isFechamentoSemEstado(fechamentoState) || !isComissaoAplicada(fechamentoState)) {
+    private void atualizarValoresFechamento(@Nullable FechamentoState fechamento) {
+        if (isFechamentoSemEstado(fechamento) || isComissaoNaoAplicada(fechamento)) {
             restaurarPlaceholderFechamento();
             return;
         }
-        exibirValorEtapaFinal(formatCurrency(fechamentoState.getValorPorCabeca()));
-        exibirDescricaoEtapaFinal(formatCurrency(fechamentoState.getValorPorKg()));
-        exibirBadgeCorretor(formatCurrency(fechamentoState.getComissaoPorKg()));
-        exibirValorTotal(formatCurrency(fechamentoState.getValorTotal()));
+        exibirValorEtapaFinal(formatCurrency(fechamento.getValorPorCabeca()));
+        exibirDescricaoEtapaFinal(formatCurrency(fechamento.getValorPorKg()));
+        exibirBadgeCorretor(formatCurrency(fechamento.getComissaoPorKg()));
+        exibirValorTotal(formatCurrency(fechamento.getValorTotal()));
     }
 
-    private void atualizarEstadoCardFrete(@Nullable PrecificacaoFreteState freteState) {
-        if (isFreteSemEstado(freteState)) return;
-        processarProposta(freteState);
-        atualizarEstadoCampoFrete(freteState);
-        if (isFreteManualEmEdicao(freteState)) return;
-        exibirTextValorFrete(formatarTituloValorFrete(freteState));
-        exibirTextValorFretePorKg(formatarDescricaoValorFrete(freteState));
+    private void atualizarEstadoCardFrete(@Nullable PrecificacaoFreteState frete) {
+        if (isFreteSemEstado(frete)) return;
+        processarProposta(frete);
+        preencherCampoValorFrete(frete);
+        exibirHelperTextFrete(formatCurrency(frete.getValorParcial()));
+        if (isFreteManualEmEdicao(frete)) return;
+        exibirTituloFrete(formatarTituloValorFrete(frete));
+        exibirDescricaoFrete(formatarDescricaoValorFrete(frete));
     }
 
-    private void atualizarEstadoCampoFrete(@NonNull PrecificacaoFreteState freteState) {
-        preencherCampoValorFrete(freteState);
-        exibirHelperTextFrete(formatCurrency(freteState.getValorParcial()));
-    }
-
-    private void atualizarEstadoCorretor(@NonNull CorretorState corretorState) {
-        exibirNomeCorretor(corretorState.getNome());
-        exibirDescricaoCorretor(formatarDescricaoCorretor(corretorState));
-    }
-
-    private void restaurarEstadoAnimal(@Nullable AnimalState animalState) {
-        if (animalState == null) return;
-        restaurarEspecificacao(animalState.getEspecificacao());
+    private void exibirDadosCorretor(@NonNull CorretorState corretor) {
+        exibirNomeCorretor(corretor.getNome());
+        exibirDescricaoCorretor(formatarDescricaoCorretor(corretor));
     }
 
     private void restaurarEspecificacao(@Nullable EspecificacaoAnimalState especificacao) {
@@ -431,37 +501,19 @@ public class NegociacaoFragment extends Fragment {
         selectChip(binding.listaSexos, sexo);
     }
 
-    private void processarCotacaoSeNecessario() {
-        if (!negociacaoViewModel.isCotacaoCalculada()) {
-            processarCotacao();
-        }
-    }
-
-    private void processarCotacao() {
-        negociacaoViewModel.processarCotacao(BigDecimal.valueOf(peso), quantidade);
-    }
-
-    private void processarProposta(@NonNull PrecificacaoFreteState freteState) {
-        negociacaoViewModel.processarProposta(BigDecimal.valueOf(peso), quantidade,
-                freteState.getValorTotal(), freteState.getFreteState());
-    }
-
-    private void processarFechamento(@NonNull CorretorState corretorState) {
-        negociacaoViewModel.processarFechamento(BigDecimal.valueOf(peso), quantidade,
-                corretorState.getComissao());
-    }
-
     private void limparFreteEDependencias() {
         limparHelperTextFrete();
-        limparValores();
+        limparProposta();
         limparVariacao();
         limparCardFrete();
         limparSelecaoCorretor();
         limparCardCorretor();
     }
 
-    private void limparValores() {
-        negociacaoViewModel.limpar();
+    private void limparProposta() {
+//        negociacaoViewModel.limpar(cotacao);
+        restaurarPlaceholderProposta();
+        restaurarPlaceholderFechamento();
     }
 
     private void limparVariacao() {
@@ -472,9 +524,13 @@ public class NegociacaoFragment extends Fragment {
         corretorViewModel.limparSelecao();
     }
 
+    private void limparHelperTextFrete() {
+        exibirHelperTextFrete(formatCurrency(BigDecimal.ZERO));
+    }
+
     private void limparCardFrete() {
-        exibirTextValorFrete(getString(R.string.titulo_frete));
-        exibirTextValorFretePorKg(getString(R.string.descricao_frete_vazio));
+        exibirTituloFrete(getString(R.string.titulo_frete));
+        exibirDescricaoFrete(getString(R.string.descricao_frete_vazio));
     }
 
     private void limparCardCorretor() {
@@ -482,31 +538,58 @@ public class NegociacaoFragment extends Fragment {
         exibirDescricaoCorretor(getString(R.string.descricao_sem_comissao));
     }
 
-
-    private void limparHelperTextFrete() {
-        exibirHelperTextFrete(formatCurrency(BigDecimal.ZERO));
-    }
-
     private void restaurarPlaceholderProposta() {
         exibirPlaceholderValorEtapaPedido();
         exibirPlaceholderDescricaoEtapaPedido();
-        exibirPlaceholderBadgeEtapaFrete();
+        exibirPlaceholderBadgeFrete();
         exibirPlaceholderValorFornecedor();
     }
 
     private void restaurarPlaceholderFechamento() {
         exibirPlaceholderValorEtapaFinal();
         exibirPlaceholderDescricaoEtapaFinal();
-        exibirPlaceholderBadgeEtapaCorretor();
+        exibirPlaceholderBadgeCorretor();
         exibirPlaceholderValorTotal();
     }
 
-    private void exibirBottomSheetEmpresa() {
-        new EmpresaBottomSheetDialogFragment().show(getChildFragmentManager(), null);
+    private void exibirPlaceholderValorEtapaPedido() {
+        setText(binding.textoValorEtapaPedido, getString(R.string.placeholder_valor_monetario));
     }
 
-    private void exibirBottomSheetCorretor() {
-        new CorretorBottomSheetDialogFragment().show(getChildFragmentManager(), null);
+    private void exibirPlaceholderDescricaoEtapaPedido() {
+        setText(binding.textoDescricaoEtapaPedido, getString(R.string.placeholder_valor_por_kg_default));
+    }
+
+    private void exibirPlaceholderBadgeFrete() {
+        setText(binding.textoBadgeEtapaFrete, getString(R.string.placeholder_badge_diferenca_default));
+    }
+
+    private void exibirPlaceholderValorFornecedor() {
+        setText(binding.textoValorFornecedor, getString(R.string.placeholder_valor_total));
+    }
+
+    private void exibirPlaceholderValorEtapaFinal() {
+        setText(binding.textoValorEtapaFinal, getString(R.string.placeholder_valor_monetario));
+    }
+
+    private void exibirPlaceholderDescricaoEtapaFinal() {
+        setText(binding.textoDescricaoEtapaFinal, getString(R.string.placeholder_valor_por_kg_default));
+    }
+
+    private void exibirPlaceholderBadgeCorretor() {
+        setText(binding.textoBadgeEtapaCorretor, getString(R.string.placeholder_badge_diferenca_default));
+    }
+
+    private void exibirPlaceholderValorTotal() {
+        setText(binding.textoValorTotal, getString(R.string.placeholder_valor_total));
+    }
+
+    private void exibirQuantidadeAnimais() {
+        setText(binding.textoValorQuantidade, String.format(Locale.getDefault(), "%d", quantidade));
+    }
+
+    private void exibirPesoMedioAnimais() {
+        setText(binding.textoValorPeso, String.format(Locale.getDefault(), "%.2f", peso));
     }
 
     private void exibirValorEtapaCotado(@NonNull String valor) {
@@ -525,6 +608,14 @@ public class NegociacaoFragment extends Fragment {
         setText(binding.textoDescricaoEtapaPedido, descricao);
     }
 
+    private void exibirBadgeFrete(@NonNull String valor) {
+        setText(binding.textoBadgeEtapaFrete, String.format(Locale.getDefault(), "+R$ %s/kg", valor));
+    }
+
+    private void exibirValorFornecedor(@NonNull String valor) {
+        setText(binding.textoValorFornecedor, valor);
+    }
+
     private void exibirValorEtapaFinal(@NonNull String valor) {
         setText(binding.textoValorEtapaFinal, valor);
     }
@@ -533,48 +624,8 @@ public class NegociacaoFragment extends Fragment {
         setText(binding.textoDescricaoEtapaFinal, descricao);
     }
 
-    private void exibirBadgeFrete(@NonNull String valor) {
-        setText(binding.textoBadgeEtapaFrete, String.format(Locale.getDefault(), "+R$ %s/kg", valor));
-    }
-
     private void exibirBadgeCorretor(@NonNull String valor) {
         setText(binding.textoBadgeEtapaCorretor, String.format(Locale.getDefault(), "+R$ %s/kg", valor));
-    }
-
-    private void exibirPlaceholderValorEtapaPedido() {
-        setText(binding.textoValorEtapaPedido, getString(R.string.placeholder_valor_monetario));
-    }
-
-    private void exibirPlaceholderDescricaoEtapaPedido() {
-        setText(binding.textoDescricaoEtapaPedido, getString(R.string.placeholder_valor_por_kg_default));
-    }
-
-    private void exibirPlaceholderBadgeEtapaFrete() {
-        setText(binding.textoBadgeEtapaFrete, getString(R.string.placeholder_badge_diferenca_default));
-    }
-
-    private void exibirPlaceholderValorFornecedor() {
-        setText(binding.textoValorFornecedor, getString(R.string.placeholder_valor_total));
-    }
-
-    private void exibirPlaceholderValorEtapaFinal() {
-        setText(binding.textoValorEtapaFinal, getString(R.string.placeholder_valor_monetario));
-    }
-
-    private void exibirPlaceholderDescricaoEtapaFinal() {
-        setText(binding.textoDescricaoEtapaFinal, getString(R.string.placeholder_valor_por_kg_default));
-    }
-
-    private void exibirPlaceholderBadgeEtapaCorretor() {
-        setText(binding.textoBadgeEtapaCorretor, getString(R.string.placeholder_badge_diferenca_default));
-    }
-
-    private void exibirPlaceholderValorTotal() {
-        setText(binding.textoValorTotal, getString(R.string.placeholder_valor_total));
-    }
-
-    private void exibirValorFornecedor(@NonNull String valor) {
-        setText(binding.textoValorFornecedor, valor);
     }
 
     private void exibirValorTotal(@NonNull String valor) {
@@ -585,11 +636,11 @@ public class NegociacaoFragment extends Fragment {
         setText(binding.textoValorVariacao, String.format(Locale.getDefault(), "%.2f%%", variacao));
     }
 
-    private void exibirTextValorFrete(@NonNull String texto) {
+    private void exibirTituloFrete(@NonNull String texto) {
         setText(binding.textoTituloFrete, texto);
     }
 
-    private void exibirTextValorFretePorKg(@NonNull String texto) {
+    private void exibirDescricaoFrete(@NonNull String texto) {
         setText(binding.textoDescricaoFrete, texto);
     }
 
@@ -609,7 +660,35 @@ public class NegociacaoFragment extends Fragment {
         setHelperText(binding.campoFreteLayout, getString(R.string.helper_frete, incidencia));
     }
 
-    private void exibirErroDeCategoriaParaFrete() {
+    private void preencherCamposEditaveis(@NonNull BigDecimal valorPorCabeca, @NonNull BigDecimal valorPorKg) {
+        setTextSafely(binding.campoValorCabecaEntrada, formatCurrency(valorPorCabeca), valorCabecaTextWatcher);
+        setTextSafely(binding.campoValorKgEntrada, formatCurrency(valorPorKg), valorKgTextWatcher);
+    }
+
+    private void preencherCampoValorFrete(@NonNull PrecificacaoFreteState frete) {
+        if (isFreteManualEmEdicao(frete)) return;
+        setText(binding.campoFreteEntrada, formatCurrency(frete.getValorTotal()));
+    }
+
+    @NonNull
+    private String formatarTituloValorFrete(@NonNull PrecificacaoFreteState frete) {
+        return String.format(Locale.getDefault(), "R$ %s/c", formatCurrency(frete.getValorTotal()));
+    }
+
+    @NonNull
+    private String formatarDescricaoValorFrete(@NonNull PrecificacaoFreteState frete) {
+        return String.format(Locale.getDefault(), "R$ %s/kg", formatCurrency(frete.getValorParcial()));
+    }
+
+    @NonNull
+    private String formatarDescricaoCorretor(@NonNull CorretorState corretor) {
+        return String.format(Locale.getDefault(), "R$ %s/%s -> R$ %s/t",
+                formatCurrency(corretor.getComissao()),
+                corretor.getTipoComissao(),
+                formatCurrency(corretor.getComissao().multiply(BigDecimal.valueOf(quantidade))));
+    }
+
+    private void exibirErroCategoriaParaFrete() {
         AlertHelper.showSnackBarErro(binding.getRoot(), getString(R.string.aviso_selecione_categoria_frete));
     }
 
@@ -621,42 +700,57 @@ public class NegociacaoFragment extends Fragment {
         AlertHelper.showSnackBarErro(binding.getRoot(), getString(R.string.aviso_preencha_campos_obrigatorios));
     }
 
-    private void preencherCamposEditaveis(BigDecimal valorPorCabeca, BigDecimal valorPorKg) {
-        setTextSafely(binding.campoValorCabecaEntrada, formatCurrency(valorPorCabeca), valorCabecaTextWatcher);
-        setTextSafely(binding.campoValorKgEntrada, formatCurrency(valorPorKg), valorKgTextWatcher);
+    private void navegarParaSimulacaoDeFrete() {
+        if (isCategoriaInvalidaParaFrete()) {
+            exibirErroCategoriaParaFrete();
+            return;
+        }
+        executarNavegacaoSimulacaoFrete();
     }
 
-    private void preencherCampoValorFrete(@NonNull PrecificacaoFreteState freteState) {
-        if (isFreteManualEmEdicao(freteState)) return;
-        setText(binding.campoFreteEntrada, formatCurrency(freteState.getValorTotal()));
+    private void executarNavegacaoSimulacaoFrete() {
+        NavHostFragment.findNavController(this).navigate(
+                NegociacaoFragmentDirections
+                        .actionNegociacaoFragmentToSimulacaoFreteeFragment()
+                        .setCargaTotal(quantidade)
+                        .setPesoMedio((float) peso));
+    }
+
+    private void executarNavegacaoDeRetorno() {
+        NavHostFragment.findNavController(this).popBackStack();
+    }
+
+    private void abrirSeletorCorretor() {
+        if (isCampoFreteVazio()) {
+            exibirErroFreteObrigatorio();
+            return;
+        }
+        exibirBottomSheetCorretor();
+    }
+
+    private void exibirBottomSheetEmpresa() {
+        new EmpresaBottomSheetDialogFragment().show(getChildFragmentManager(), null);
+    }
+
+    private void exibirBottomSheetCorretor() {
+        new CorretorBottomSheetDialogFragment().show(getChildFragmentManager(), null);
+    }
+
+
+    private void finalizar() {
+        if (isFormularioIncompleto()) exibirErroCamposObrigatorios();
+    }
+
+
+
+    @NonNull
+    private BigDecimal obterValorParcialFrete(@Nullable PrecificacaoFreteState frete) {
+        return frete != null ? frete.getValorParcial() : BigDecimal.ZERO;
     }
 
     @NonNull
-    private String formatarDescricaoCorretor(@NonNull CorretorState corretorState) {
-        return String.format(Locale.getDefault(), "R$ %s/%s -> R$ %s/t",
-                formatCurrency(corretorState.getComissao()), corretorState.getTipoComissao(),
-                formatCurrency(corretorState.getComissao().multiply(BigDecimal.valueOf(quantidade))));
-    }
-
-    @NonNull
-    private String formatarTituloValorFrete(@NonNull PrecificacaoFreteState freteState) {
-        return String.format(Locale.getDefault(), "R$ %s/c", formatCurrency(freteState.getValorTotal()));
-    }
-
-    @NonNull
-    private String formatarDescricaoValorFrete(@NonNull PrecificacaoFreteState freteState) {
-        return String.format(Locale.getDefault(), "R$ %s/kg", formatCurrency(freteState.getValorParcial()));
-    }
-
-
-    @Nullable
-    private Integer obterTextoIdade() {
-        return isNotEmpty(binding.campoIdadeEntrada) ? getInt(binding.campoIdadeEntrada) : null;
-    }
-
-    @Nullable
-    private String obterValorSexoSelecionado() {
-        return getCheckedChipText(binding.listaSexos);
+    private FreteState obterFreteState(@Nullable PrecificacaoFreteState frete) {
+        return frete != null ? frete.getFreteState() : FreteState.NAO_SELECIONADO;
     }
 
     @NonNull
@@ -674,11 +768,22 @@ public class NegociacaoFragment extends Fragment {
         return getBigDecimal(binding.campoValorKgEntrada);
     }
 
-    private boolean isProntoParaFinalizar() {
-        return isIdadePreenchida()
-                && isSexoSelecionado()
-                && !isCategoriaInvalidaParaFrete()
-                && !isRacaNaoSelecionada(racaAtual);
+    @Nullable
+    private String obterValorSexoSelecionado() {
+        return getCheckedChipText(binding.listaSexos);
+    }
+
+    private BigDecimal obterComissaoTotal() {
+        return isCorretorNaoSelecionado(corretorAtual) ? BigDecimal.ZERO : corretorAtual.getComissao();
+    }
+    @Nullable
+    private Integer obterTextoIdade() {
+        return isIdadePreenchida() ? getInt(binding.campoIdadeEntrada) : null;
+    }
+
+    private boolean isFormularioIncompleto() {
+        return !isIdadePreenchida() || !isSexoSelecionado()
+                || isCategoriaInvalidaParaFrete() || isRacaNaoSelecionada(racaAtual);
     }
 
     private boolean isIdadePreenchida() {
@@ -693,102 +798,72 @@ public class NegociacaoFragment extends Fragment {
         return !isNotEmpty(binding.campoFreteEntrada);
     }
 
-    private boolean isCampoValorCabecaVazio() {
-        return !isNotEmpty(binding.campoValorCabecaEntrada);
-    }
-
-    private boolean isCampoValorKgVazio() {
-        return !isNotEmpty(binding.campoValorKgEntrada);
-    }
-
+    private boolean isFreteIndisponivel() {return freteAtual == null;}
     private boolean isCategoriaInvalidaParaFrete() {
         return categoriaAtual == null;
     }
 
-    private boolean isFreteManualEmEdicao(@NonNull PrecificacaoFreteState freteState) {
-        return isFreteManual(freteState) && !isCampoFreteVazio();
+    private boolean isCotacaoIndisponivel() {
+        return cotacaoAtual == null;
     }
 
-    private boolean isFreteManual(@NonNull PrecificacaoFreteState freteState) {
-        return freteState.getFreteState() == FreteState.MANUAL;
+    private boolean isPropostaIndisponivel() {
+        return propostaAtual == null;
     }
 
-    private boolean isCorretorNaoSelecionado(@Nullable CorretorState corretorState) {
-        return corretorState == null;
+    private boolean isCotacaoSemEstado(@Nullable CotacaoState cotacao) {
+        return cotacao == null;
     }
 
-    private boolean isEmpresaNaoSelecionada(@Nullable EmpresaState empresaState) {
-        return empresaState == null;
+    private boolean isPropostaSemEstado(@Nullable PropostaState proposta) {
+        return proposta == null;
     }
 
-    private boolean isCategoriaNaoSelecionada(@Nullable CategoriaState categoriaState) {
-        return categoriaState == null;
+    private boolean isFechamentoSemEstado(@Nullable FechamentoState fechamento) {
+        return fechamento == null;
     }
 
-    private boolean isRacaNaoSelecionada(@Nullable RacaState racaState) {
-        return racaState == null;
+    private boolean isFreteSemEstado(@Nullable PrecificacaoFreteState frete) {
+        return frete == null;
     }
 
-    private boolean isCotacaoSemEstado(@Nullable CotacaoState cotacaoState) {
-        return cotacaoState == null;
+    private boolean isFreteNaoDescontado(@NonNull PropostaState proposta) {
+        return !proposta.isFreteDescontado();
     }
 
-    private boolean isPropostaSemEstado(@Nullable PropostaState propostaState) {
-        return propostaState == null;
+    private boolean isComissaoNaoAplicada(@NonNull FechamentoState fechamento) {
+        return !fechamento.isComissaoAplicada();
     }
 
-    private boolean isFechamentoSemEstado(@Nullable FechamentoState fechamentoState) {
-        return fechamentoState == null;
+    private boolean isFreteManualEmEdicao(@NonNull PrecificacaoFreteState frete) {
+        return isFreteManual(frete) && !isCampoFreteVazio();
     }
 
-    private boolean isNegociacaoSemEstado(@Nullable NegociacaoState negociacaoState) {
-        return negociacaoState == null;
+    private boolean isFreteManual(@NonNull PrecificacaoFreteState frete) {
+        return frete.getFreteState() == FreteState.MANUAL;
     }
 
-    private boolean isFreteDescontado(@NonNull PropostaState propostaState) {
-        return propostaState.isFreteDescontado();
+    private boolean isCorretorNaoSelecionado(@Nullable CorretorState corretor) {
+        return corretor == null;
     }
 
-    private boolean isComissaoAplicada(@NonNull FechamentoState fechamentoState) {
-        return fechamentoState.isComissaoAplicada();
+    private boolean isEmpresaNaoSelecionada(@Nullable EmpresaState empresa) {
+        return empresa == null;
     }
 
-    private boolean isFreteSemEstado(@Nullable PrecificacaoFreteState freteState) {
-        return freteState == null;
+    private boolean isCategoriaNaoSelecionada(@Nullable CategoriaState categoria) {
+        return categoria == null;
     }
 
-
-    private void navegarParaSimulacaoDeFrete() {
-        if (isCategoriaInvalidaParaFrete()) {
-            exibirErroDeCategoriaParaFrete();
-            return;
-        }
-        executarNavegacaoSimulacaoFrete();
+    private boolean isRacaNaoSelecionada(@Nullable RacaState raca) {
+        return raca == null;
     }
 
-    private void executarNavegacaoSimulacaoFrete() {
-        NegociacaoFragmentDirections.ActionNegociacaoFragmentToSimulacaoFreteeFragment directions =
-                NegociacaoFragmentDirections.actionNegociacaoFragmentToSimulacaoFreteeFragment()
-                        .setCargaTotal(quantidade)
-                        .setPesoMedio((float) peso);
-        NavHostFragment.findNavController(this).navigate(directions);
+    private boolean isValorZero(@NonNull BigDecimal valor) {
+        return valor.compareTo(BigDecimal.ZERO) == 0;
     }
 
-    private void executarNavegacaoDeRetorno() {
-        NavHostFragment.findNavController(this).popBackStack();
-    }
-
-    private void abrirSeletorCorretor() {
-        if (isCampoFreteVazio()) {
-            exibirErroFreteObrigatorio();
-            return;
-        }
-        exibirBottomSheetCorretor();
-    }
-
-    private void finalizar() {
-        if (!isProntoParaFinalizar()) {
-            exibirErroCamposObrigatorios();
-        }
+    private boolean isRecalculoInvalido(@NonNull BigDecimal valor, @Nullable CotacaoState cotacao, @Nullable PrecificacaoFreteState frete) {
+        return isValorZero(valor) || cotacao == null || frete == null;
     }
 }

@@ -17,7 +17,6 @@ public class FechamentoState {
         this.isComissaoAplicada = comissaoPorKg != null && comissaoPorKg.compareTo(BigDecimal.ZERO) != 0;
     }
 
-
     public BigDecimal getValorPorKg() { return valorPorKg; }
     public BigDecimal getValorPorCabeca() { return valorPorCabeca; }
     public BigDecimal getValorTotal() { return valorTotal; }

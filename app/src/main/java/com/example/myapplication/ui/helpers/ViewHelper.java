@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.helpers;
 
+import static com.example.myapplication.ui.helpers.FormatHelper.getDecimal;
+
 import android.content.Context;
 import android.text.TextWatcher;
 import android.view.View;
@@ -44,7 +46,7 @@ public class ViewHelper {
 
     @NonNull
     public static BigDecimal getBigDecimal(@Nullable EditText view) {
-        return FormatHelper.getDecimal(requireText(view));
+        return getDecimal(requireText(view));
     }
 
     public static <T> boolean isEmpty(@Nullable T value) {

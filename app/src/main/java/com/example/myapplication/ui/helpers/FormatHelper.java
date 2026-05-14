@@ -1,13 +1,12 @@
 package com.example.myapplication.ui.helpers;
 
+
 import static com.example.myapplication.utils.DecimalUtil.CURRENCY_FORMAT;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
 import java.util.Locale;
 

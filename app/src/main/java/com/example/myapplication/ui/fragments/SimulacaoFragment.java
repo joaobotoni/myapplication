@@ -21,7 +21,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentSimulacaoBinding;
-import com.example.myapplication.ui.state.SimulacaoState;
+import com.example.myapplication.ui.state.negociacao.CotacaoState;
 import com.example.myapplication.ui.viewmodel.SimulacaoViewModel;
 
 import java.math.BigDecimal;
@@ -91,14 +91,14 @@ public class SimulacaoFragment extends Fragment {
             simulacaoViewModel.limpar();
             return;
         }
-        simulacaoViewModel.simular(obterPesoMedio(), obterCargaTotal());
+        simulacaoViewModel.processarCotacao(obterPesoMedio(), obterCargaTotal());
     }
 
     private void atualizarEstadoDoBotaoProsseguir() {
         binding.botaoProsseguir.setEnabled(isEntradaValida());
     }
 
-    private void atualizarCartao(@Nullable SimulacaoState estado) {
+    private void atualizarCartao(@Nullable CotacaoState estado) {
         if (isEstadoVazio(estado)) {
             limparCartao();
             return;
@@ -109,19 +109,19 @@ public class SimulacaoFragment extends Fragment {
         atualizarValorPorKg(estado);
     }
 
-    private void atualizarValorTotal(@NonNull SimulacaoState estado) {
+    private void atualizarValorTotal(@NonNull CotacaoState estado) {
         exibirValorTotal(formatCurrency(estado.getValorTotal()));
     }
 
-    private void atualizarQuantidade(@NonNull SimulacaoState estado) {
+    private void atualizarQuantidade(@NonNull CotacaoState estado) {
         exibirQuantidade(formatInteger(estado.getQuantidade()));
     }
 
-    private void atualizarValorPorCabeca(@NonNull SimulacaoState estado) {
+    private void atualizarValorPorCabeca(@NonNull CotacaoState estado) {
         exibirValorPorCabeca(formatCurrency(estado.getValorPorCabeca()));
     }
 
-    private void atualizarValorPorKg(@NonNull SimulacaoState estado) {
+    private void atualizarValorPorKg(@NonNull CotacaoState estado) {
         exibirValorPorKg(formatCurrency(estado.getValorPorKg()));
     }
 
@@ -179,7 +179,7 @@ public class SimulacaoFragment extends Fragment {
         return !isEntradaValida();
     }
 
-    private boolean isEstadoVazio(@Nullable SimulacaoState estado) {
+    private boolean isEstadoVazio(@Nullable CotacaoState estado) {
         return estado == null;
     }
 
