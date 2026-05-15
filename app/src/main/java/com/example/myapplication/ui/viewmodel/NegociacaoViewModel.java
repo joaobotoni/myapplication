@@ -5,7 +5,6 @@ import static com.example.myapplication.utils.DecimalUtil.CEM;
 import static com.example.myapplication.utils.DecimalUtil.ESCALA_CALCULO;
 import static com.example.myapplication.utils.DecimalUtil.ESCALA_MONETARIA;
 
-import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -27,7 +26,6 @@ import com.example.myapplication.ui.state.negociacao.NegociacaoState;
 import com.example.myapplication.ui.state.negociacao.PropostaState;
 
 import java.math.BigDecimal;
-import java.util.Locale;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
 import jakarta.inject.Inject;
@@ -38,9 +36,7 @@ public class NegociacaoViewModel extends ViewModel {
     private final ValorReferenciaRepository valorReferenciaRepository;
     private final TaskHelper taskHelper;
     private final MutableLiveData<NegociacaoState> state = new MutableLiveData<>(null);
-    private final MutableLiveData<Double> variacao = new MutableLiveData<>(0.0);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
-
     @Inject
     public NegociacaoViewModel(PrecificacaoBezerroRepository precificacaoBezerroRepository,
                                ValorReferenciaRepository valorReferenciaRepository, TaskHelper taskHelper) {
@@ -62,7 +58,10 @@ public class NegociacaoViewModel extends ViewModel {
     }
 
     public LiveData<Double> getVariacao() {
-        return variacao;
+        return Transformations.map(state, s -> {
+            if (s == null || s.getCotacao() == null || s.getFechamento() == null) return 0.0;
+            return calcularVariacao(s.getCotacao(), s.getFechamento());
+        });
     }
 
     public LiveData<Throwable> getError() {
@@ -80,40 +79,25 @@ public class NegociacaoViewModel extends ViewModel {
     public void processarFechamento(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
         taskHelper.execute(
                 () -> criarNegociacao(cotacao, peso, quantidade, freteTotalLote, freteState, comissaoTotal),
-                negociacaoState -> {
-                    state.postValue(negociacaoState);
-                    variacao.postValue(calcularVariacao(negociacaoState.getCotacao(), negociacaoState.getFechamento()));
-                },
-                error::postValue
-        );
-    }
-
-    public void recalcularPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento,
-                                        BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade,
-                                        BigDecimal fretePorKg, FreteState freteState) {
-        taskHelper.execute(
-                () -> atualizarPropostaPorKg(cotacao, fechamento, novoValorPorKg, peso, quantidade, fretePorKg, freteState),
                 state::postValue,
                 error::postValue
         );
     }
 
-    public void recalcularPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento,
-                                            BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade,
-                                            BigDecimal fretePorKg, FreteState freteState) {
-        taskHelper.execute(
-                () -> atualizarPropostaPorCabeca(cotacao, fechamento, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState),
-                state::postValue,
-                error::postValue
-        );
+    public void recalcularPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+        try {
+            state.setValue(atualizarPropostaPorKg(cotacao, fechamento, novoValorPorKg, peso, quantidade, fretePorKg, freteState));
+        } catch (Exception e) {
+            error.setValue(e);
+        }
     }
 
-    public void limpar(CotacaoState cotacao) {
-        state.setValue(new NegociacaoState(cotacao, null, null));
-    }
-
-    public void limparVariacao() {
-        variacao.postValue(0.0);
+    public void recalcularPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+        try {
+            state.setValue(atualizarPropostaPorCabeca(cotacao, fechamento, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState));
+        } catch (Exception e) {
+            error.setValue(e);
+        }
     }
 
     private NegociacaoState criarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
@@ -204,5 +188,13 @@ public class NegociacaoViewModel extends ViewModel {
                 .multiply(CEM)
                 .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO)
                 .doubleValue();
+    }
+
+    public void limpar() {
+        state.setValue(new NegociacaoState(null, null, null));
+    }
+
+    public void limparParcialmente(CotacaoState cotacao) {
+        state.setValue(new NegociacaoState(cotacao, null, null));
     }
 }

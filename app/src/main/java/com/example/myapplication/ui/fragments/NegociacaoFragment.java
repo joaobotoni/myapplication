@@ -354,9 +354,7 @@ public class NegociacaoFragment extends Fragment {
     private void onCorretorSelecionado(@Nullable CorretorState corretor) {
         corretorAtual = corretor;
         if (isCorretorNaoSelecionado(corretor)) {
-            limparVariacao();
             limparCardCorretor();
-            limpar();
             return;
         }
         exibirDadosCorretor(corretor);
@@ -427,7 +425,8 @@ public class NegociacaoFragment extends Fragment {
                                      @Nullable FechamentoState fechamento,
                                      @Nullable PrecificacaoFreteState frete) {
         if (isRecalculoInvalido(valor, cotacao, frete)) {
-            limparProposta();
+            limparPropostaEFechamento();
+            setTextSafely(binding.campoValorKgEntrada, formatCurrency(BigDecimal.ZERO), valorKgTextWatcher);
             return;
         }
         negociacaoViewModel.recalcularPropostaPorCabeca(cotacao, fechamento, valor,
@@ -439,7 +438,8 @@ public class NegociacaoFragment extends Fragment {
                                  @Nullable FechamentoState fechamento,
                                  @Nullable PrecificacaoFreteState frete) {
         if (isRecalculoInvalido(valor, cotacao, frete)) {
-            limparProposta();
+            limparPropostaEFechamento();
+            setTextSafely(binding.campoValorCabecaEntrada, formatCurrency(BigDecimal.ZERO), valorCabecaTextWatcher);
             return;
         }
         negociacaoViewModel.recalcularPropostaPorKg(cotacao, fechamento, valor,
@@ -511,26 +511,15 @@ public class NegociacaoFragment extends Fragment {
 
     private void limparFrete() {
         limparHelperTextFrete();
-        limparProposta();      // já chama limpar()
-        limparVariacao();
+        limparPropostaEFechamento();
         limparCardFrete();
-        limparSelecaoCorretor();
         limparCardCorretor();
-        limpar();              // chamado de novo via limparProposta() e aqui
+        atualizarValoresCotado(cotacaoAtual);
     }
 
-    private void limparProposta() {
+    private void limparPropostaEFechamento() {
         restaurarPlaceholderProposta();
         restaurarPlaceholderFechamento();
-        limpar();
-    }
-
-    private void limparVariacao() {
-        negociacaoViewModel.limparVariacao();
-    }
-
-    private void limparSelecaoCorretor() {
-        corretorViewModel.limparSelecao();
     }
 
     private void limparHelperTextFrete() {
@@ -879,13 +868,7 @@ public class NegociacaoFragment extends Fragment {
         return valor.compareTo(BigDecimal.ZERO) == 0;
     }
 
-    private boolean isRecalculoInvalido(@NonNull BigDecimal valor, @Nullable CotacaoState cotacao,
-                                        @Nullable PrecificacaoFreteState frete) {
+    private boolean isRecalculoInvalido(@NonNull BigDecimal valor, @Nullable CotacaoState cotacao, @Nullable PrecificacaoFreteState frete) {
         return isValorZero(valor) || cotacao == null || frete == null;
     }
-
-    private void limpar(){
-        negociacaoViewModel.limpar(cotacaoAtual);
-    }
-
 }
