@@ -10,6 +10,7 @@ import static com.example.myapplication.ui.helpers.ViewHelper.parseInt;
 import static com.example.myapplication.ui.helpers.ViewHelper.setText;
 
 import android.os.Bundle;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,10 +19,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentSimulacaoBinding;
+import com.example.myapplication.ui.helpers.NavigationHelper;
 import com.example.myapplication.ui.state.negociacao.CotacaoState;
 import com.example.myapplication.ui.viewmodel.SimulacaoViewModel;
 
@@ -33,6 +34,8 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class SimulacaoFragment extends Fragment {
     private FragmentSimulacaoBinding binding;
     private SimulacaoViewModel simulacaoViewModel;
+    private TextWatcher pesoWatcher;
+    private TextWatcher quantidadeWatcher;
 
     @Nullable
     @Override
@@ -51,6 +54,7 @@ public class SimulacaoFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        removerTextWatchers();
         binding = null;
         super.onDestroyView();
     }
@@ -69,8 +73,16 @@ public class SimulacaoFragment extends Fragment {
     }
 
     private void configurarTextWatcherEntradas() {
-        binding.campoPesoEntrada.addTextChangedListener(simpleTextWatcher(this::aoAlterarEntrada));
-        binding.campoQuantidadeEntrada.addTextChangedListener(simpleTextWatcher(this::aoAlterarEntrada));
+        pesoWatcher = simpleTextWatcher(this::aoAlterarEntrada);
+        quantidadeWatcher = simpleTextWatcher(this::aoAlterarEntrada);
+        binding.campoPesoEntrada.addTextChangedListener(pesoWatcher);
+        binding.campoQuantidadeEntrada.addTextChangedListener(quantidadeWatcher);
+    }
+
+    private void removerTextWatchers() {
+        if (binding == null) return;
+        binding.campoPesoEntrada.removeTextChangedListener(pesoWatcher);
+        binding.campoQuantidadeEntrada.removeTextChangedListener(quantidadeWatcher);
     }
 
     private void configurarAcaoBotaoProsseguir() {
@@ -185,10 +197,9 @@ public class SimulacaoFragment extends Fragment {
     }
 
     private void navegarParaNegociacao() {
-        SimulacaoFragmentDirections.ActionSimulacaoFragmentToNegociacaoFragment directions =
+        NavigationHelper.navegar(this, R.id.simulacaoFragment,
                 SimulacaoFragmentDirections.actionSimulacaoFragmentToNegociacaoFragment()
                         .setCargaTotal(obterCargaTotal())
-                        .setPesoMedio(obterPesoMedio().floatValue());
-        NavHostFragment.findNavController(this).navigate(directions);
+                        .setPesoMedio(obterPesoMedio().floatValue()));
     }
 }

@@ -22,6 +22,7 @@ public class SimulacaoViewModel extends ViewModel {
     private final PrecificacaoBezerroRepository precificacaoBezerroRepository;
     private final ValorReferenciaRepository valorReferenciaRepository;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<CotacaoState> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
 
@@ -41,11 +42,17 @@ public class SimulacaoViewModel extends ViewModel {
     }
 
     public void processarCotacao(BigDecimal peso, Integer quantidade) {
-        taskHelper.execute(() -> calcularCotacao(peso, quantidade), state::postValue, error::postValue);
+        tarefas.adicionar(taskHelper.execute(() -> calcularCotacao(peso, quantidade), state::postValue, error::postValue));
     }
 
     public void limpar() {
         state.setValue(null);
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 
     private CotacaoState calcularCotacao(BigDecimal peso, Integer quantidade) {

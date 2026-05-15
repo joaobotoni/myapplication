@@ -4,14 +4,21 @@ import android.os.Handler;
 
 import androidx.annotation.NonNull;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
 public final class TaskHelper {
 
+    private TaskHelper(){
+        throw new AssertionError("TaskHelper is a utility class and must not be instantiated.");
+    }
     private final ExecutorService executor;
     private final Handler handler;
 
@@ -21,21 +28,49 @@ public final class TaskHelper {
         this.handler = handler;
     }
 
-    public <T> void execute(
+    public interface Cancellable {
+        void cancel();
+    }
+
+    public static final class Cancellables {
+        private final List<Cancellable> ativas = new ArrayList<>();
+
+        @NonNull
+        public Cancellable adicionar(@NonNull Cancellable cancellable) {
+            ativas.add(cancellable);
+            return cancellable;
+        }
+
+        public void cancelarTudo() {
+            for (Cancellable c : ativas) c.cancel();
+            ativas.clear();
+        }
+    }
+
+    @NonNull
+    public <T> Cancellable execute(
             @NonNull Callable<T> task,
             @NonNull Consumer<T> onSuccess,
             @NonNull Consumer<Exception> onError
     ) {
-        executor.execute(() -> {
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+        Future<?> future = executor.submit(() -> {
             try {
                 T result = task.call();
-                handler.post(() -> onSuccess.accept(result));
+                if (cancelled.get()) return;
+                handler.post(() -> {
+                    if (!cancelled.get()) onSuccess.accept(result);
+                });
             } catch (Exception e) {
-                handler.post(() -> onError.accept(e));
+                if (cancelled.get()) return;
+                handler.post(() -> {
+                    if (!cancelled.get()) onError.accept(e);
+                });
             }
         });
-    }
-    public void cancelAll() {
-        executor.shutdownNow();
+        return () -> {
+            cancelled.set(true);
+            future.cancel(true);
+        };
     }
 }

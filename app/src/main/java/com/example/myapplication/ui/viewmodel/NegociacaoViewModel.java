@@ -35,8 +35,13 @@ public class NegociacaoViewModel extends ViewModel {
     private final PrecificacaoBezerroRepository precificacaoBezerroRepository;
     private final ValorReferenciaRepository valorReferenciaRepository;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<NegociacaoState> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
+    private final LiveData<PropostaState> proposta = Transformations.map(state, s -> s != null ? s.getProposta() : null);
+    private final LiveData<FechamentoState> fechamento = Transformations.map(state, s -> s != null ? s.getFechamento() : null);
+    private final LiveData<Double> variacao = Transformations.map(state, this::extrairVariacao);
+
     @Inject
     public NegociacaoViewModel(PrecificacaoBezerroRepository precificacaoBezerroRepository,
                                ValorReferenciaRepository valorReferenciaRepository, TaskHelper taskHelper) {
@@ -50,54 +55,57 @@ public class NegociacaoViewModel extends ViewModel {
     }
 
     public LiveData<PropostaState> getProposta() {
-        return Transformations.map(state, s -> s != null ? s.getProposta() : null);
+        return proposta;
     }
 
     public LiveData<FechamentoState> getFechamento() {
-        return Transformations.map(state, s -> s != null ? s.getFechamento() : null);
+        return fechamento;
     }
 
     public LiveData<Double> getVariacao() {
-        return Transformations.map(state, s -> {
-            if (s == null || s.getCotacao() == null || s.getFechamento() == null) return 0.0;
-            return calcularVariacao(s.getCotacao(), s.getFechamento());
-        });
+        return variacao;
     }
 
     public LiveData<Throwable> getError() {
         return error;
     }
 
-    public void processarProposta(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
-        taskHelper.execute(
+    public void processarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
+        tarefas.adicionar(taskHelper.execute(
                 () -> criarNegociacao(cotacao, peso, quantidade, freteTotalLote, freteState, comissaoTotal),
                 state::postValue,
                 error::postValue
-        );
-    }
-
-    public void processarFechamento(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
-        taskHelper.execute(
-                () -> criarNegociacao(cotacao, peso, quantidade, freteTotalLote, freteState, comissaoTotal),
-                state::postValue,
-                error::postValue
-        );
+        ));
     }
 
     public void recalcularPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
-        try {
-            state.setValue(atualizarPropostaPorKg(cotacao, fechamento, novoValorPorKg, peso, quantidade, fretePorKg, freteState));
-        } catch (Exception e) {
-            error.setValue(e);
-        }
+        tarefas.adicionar(taskHelper.execute(
+                () -> atualizarPropostaPorKg(cotacao, fechamento, novoValorPorKg, peso, quantidade, fretePorKg, freteState),
+                state::postValue,
+                error::postValue
+        ));
     }
 
     public void recalcularPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
-        try {
-            state.setValue(atualizarPropostaPorCabeca(cotacao, fechamento, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState));
-        } catch (Exception e) {
-            error.setValue(e);
-        }
+        tarefas.adicionar(taskHelper.execute(
+                () -> atualizarPropostaPorCabeca(cotacao, fechamento, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState),
+                state::postValue,
+                error::postValue
+        ));
+    }
+
+    public void limpar() {
+        state.setValue(new NegociacaoState(null, null, null));
+    }
+
+    public void limparParcialmente(CotacaoState cotacao) {
+        state.setValue(new NegociacaoState(cotacao, null, null));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 
     private NegociacaoState criarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
@@ -180,6 +188,11 @@ public class NegociacaoViewModel extends ViewModel {
                 .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO);
     }
 
+    private Double extrairVariacao(NegociacaoState s) {
+        if (s == null || s.getCotacao() == null || s.getFechamento() == null) return 0.0;
+        return calcularVariacao(s.getCotacao(), s.getFechamento());
+    }
+
     private double calcularVariacao(CotacaoState cotacao, FechamentoState fechamentoState) {
         BigDecimal valorCotacao = cotacao.getValorTotal();
         BigDecimal valorFechamento = fechamentoState.getValorTotal();
@@ -188,13 +201,5 @@ public class NegociacaoViewModel extends ViewModel {
                 .multiply(CEM)
                 .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO)
                 .doubleValue();
-    }
-
-    public void limpar() {
-        state.setValue(new NegociacaoState(null, null, null));
-    }
-
-    public void limparParcialmente(CotacaoState cotacao) {
-        state.setValue(new NegociacaoState(cotacao, null, null));
     }
 }

@@ -22,6 +22,7 @@ public class CategoriaViewModel extends ViewModel {
     private final CategoriaFreteRepository repositorio;
     private final CategoriaMapper mapper;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<List<CategoriaState>> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
     private final MutableLiveData<CategoriaState> categoriaSelecionada = new MutableLiveData<>(null);
@@ -65,13 +66,19 @@ public class CategoriaViewModel extends ViewModel {
     }
 
     private void listarCategorias() {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> repositorio.getAll().stream()
                         .map(mapper::mapFrom)
                         .collect(Collectors.toList()),
                 state::postValue,
                 error::postValue
-        );
+        ));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 
     public void limparSelecao() {

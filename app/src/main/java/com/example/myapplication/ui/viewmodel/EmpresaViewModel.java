@@ -22,6 +22,7 @@ public class EmpresaViewModel extends ViewModel {
     private final EmpresaRepository repositorio;
     private final EmpresaMapper mapper;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<List<EmpresaState>> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
     private final MutableLiveData<EmpresaState> empresaSelecionada = new MutableLiveData<>(null);
@@ -65,13 +66,19 @@ public class EmpresaViewModel extends ViewModel {
     }
 
     private void listarEmpresas() {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> repositorio.getAll().stream()
                         .map(mapper::mapFrom)
                         .collect(Collectors.toList()),
                 state::postValue,
                 error::postValue
-        );
+        ));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 
     public void limparSelecao() {

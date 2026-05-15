@@ -19,6 +19,7 @@ import jakarta.inject.Inject;
 public class TransporteViewModel extends ViewModel {
     private final TransporteRepository repositorio;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<List<TransporteState>> state = new MutableLiveData<>();
     private final MutableLiveData<Throwable> error = new MutableLiveData<>();
     private final TransporteMapper transporteMapper;
@@ -39,11 +40,17 @@ public class TransporteViewModel extends ViewModel {
     }
 
     public void recomendar(long categoria, int quantidade) {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> transporteMapper
                         .mapFrom(repositorio.recomendarTransportes(categoria, quantidade)),
                 state::postValue,
                 error::postValue
-        );
+        ));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 }

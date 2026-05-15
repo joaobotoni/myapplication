@@ -52,27 +52,31 @@ public class LocationAdapter extends ListAdapter<Address, LocationAdapter.ViewHo
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(ItemEnderecoBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        return new ViewHolder(ItemEnderecoBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(getItem(position), listener);
+        holder.bind(getItem(position));
     }
 
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final ItemEnderecoBinding binding;
+        private Address item;
 
-        ViewHolder(ItemEnderecoBinding binding) {
+        ViewHolder(ItemEnderecoBinding binding, OnClickListener listener) {
             super(binding.getRoot());
             this.binding = binding;
+            itemView.setOnClickListener(v -> {
+                if (item != null) listener.onClick(item);
+            });
         }
 
-        void bind(Address address, OnClickListener listener) {
+        void bind(Address address) {
+            this.item = address;
             setText(binding.textoNomeCidade, address.getLocality());
             setText(binding.textoNomeEstado, address.getAdminArea());
-            itemView.setOnClickListener(v -> listener.onClick(address));
         }
     }
 

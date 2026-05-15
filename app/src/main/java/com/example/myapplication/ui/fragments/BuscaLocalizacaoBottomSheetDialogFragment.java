@@ -1,7 +1,7 @@
 package com.example.myapplication.ui.fragments;
 
 import static com.example.myapplication.ui.helpers.AlertHelper.showSnackBarErro;
-import static com.example.myapplication.ui.helpers.TextWatcherHelper.SearchTextWatcher;
+import static com.example.myapplication.ui.helpers.TextWatcherHelper.searchTextWatcher;
 import static com.example.myapplication.ui.helpers.ViewHelper.requireText;
 
 import android.Manifest;
@@ -9,6 +9,7 @@ import android.app.Dialog;
 import android.location.Address;
 import android.location.Location;
 import android.os.Bundle;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +24,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.FragmentBottomSheetCorretorBuscaEnderecoBinding;
 import com.example.myapplication.ui.adapters.LocationAdapter;
-import com.example.myapplication.ui.helpers.TextWatcherHelper;
 import com.example.myapplication.ui.state.BuscaLocalizacaoState;
 import com.example.myapplication.ui.viewmodel.BuscaLocalizacaoViewModel;
 import com.example.myapplication.ui.viewmodel.RotaViewModel;
@@ -35,11 +35,15 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class BuscaLocalizacaoBottomSheetDialogFragment extends BottomSheetDialogFragment {
+
+    public static final String TAG = "BuscaLocalizacaoBottomSheet";
+
     private FragmentBottomSheetCorretorBuscaEnderecoBinding binding;
     private FusedLocationProviderClient fusedClient;
     private BuscaLocalizacaoViewModel buscaLocalizacaoViewModel;
     private RotaViewModel rotaViewModel;
     private LocationAdapter adapter;
+    private TextWatcher consultaWatcher;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -74,14 +78,12 @@ public class BuscaLocalizacaoBottomSheetDialogFragment extends BottomSheetDialog
         configurarObservadores();
     }
 
-
-    @Override
-    public void onStart() {
-        super.onStart();
-    }
-
     @Override
     public void onDestroyView() {
+        if (binding != null && consultaWatcher != null) {
+            binding.textInputEditText.removeTextChangedListener(consultaWatcher);
+        }
+        consultaWatcher = null;
         super.onDestroyView();
         binding = null;
     }
@@ -98,13 +100,14 @@ public class BuscaLocalizacaoBottomSheetDialogFragment extends BottomSheetDialog
     }
 
     private void configurarInput() {
-        binding.textInputEditText.addTextChangedListener(TextWatcherHelper.searchTextWatcher(3, this::buscar));
+        consultaWatcher = searchTextWatcher(3, this::buscar);
+        binding.textInputEditText.addTextChangedListener(consultaWatcher);
     }
 
     private void configurarObservadores() {
         buscaLocalizacaoViewModel.getState().observe(getViewLifecycleOwner(), this::atualizarListaLocalizacoes);
         buscaLocalizacaoViewModel.getError().observe(getViewLifecycleOwner(), this::tratarErroBusca);
-        buscaLocalizacaoViewModel.getError().observe(getViewLifecycleOwner(), this::tratarErroRota);
+        rotaViewModel.getError().observe(getViewLifecycleOwner(), this::tratarErroRota);
     }
 
     private void atualizarListaLocalizacoes(@Nullable BuscaLocalizacaoState state) {

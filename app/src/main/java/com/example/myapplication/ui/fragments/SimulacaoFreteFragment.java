@@ -14,6 +14,9 @@ import static com.example.myapplication.ui.helpers.ViewHelper.parseDouble;
 import static com.example.myapplication.ui.helpers.ViewHelper.setText;
 import static com.example.myapplication.ui.helpers.ViewHelper.setVisible;
 
+import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.Manifest;
 import android.content.Intent;
 import android.net.Uri;
@@ -30,7 +33,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.fragment.NavHostFragment;
+
+import com.example.myapplication.ui.helpers.NavigationHelper;
 
 import com.example.myapplication.R;
 import com.example.myapplication.data.models.Transporte;
@@ -61,6 +65,8 @@ public class SimulacaoFreteFragment extends Fragment {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
     };
+
+    private static final String TAG_BOTTOM_SHEET_BUSCA_LOCALIZACAO = "BuscaLocalizacaoBottomSheet";
 
     @Inject
     TransporteMapper transporteMapper;
@@ -116,6 +122,9 @@ public class SimulacaoFreteFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        if (binding != null && distanciaManualWatcher != null) {
+            binding.entradaTextoDistancia.removeTextChangedListener(distanciaManualWatcher);
+        }
         super.onDestroyView();
         binding = null;
     }
@@ -141,6 +150,7 @@ public class SimulacaoFreteFragment extends Fragment {
 
     private void configurarAdapterDeTransporte() {
         transporteAdapter = new TransporteAdapter();
+        transporteAdapter.setStateRestorationPolicy(RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY);
         binding.listTransport.setAdapter(transporteAdapter);
     }
 
@@ -379,11 +389,13 @@ public class SimulacaoFreteFragment extends Fragment {
     }
 
     private void abrirBuscaDeLocalizacao() {
-        new BuscaLocalizacaoBottomSheetDialogFragment().show(getChildFragmentManager(), null);
+        FragmentManager fm = getChildFragmentManager();
+        if (fm.findFragmentByTag(TAG_BOTTOM_SHEET_BUSCA_LOCALIZACAO) != null) return;
+        new BuscaLocalizacaoBottomSheetDialogFragment().show(fm, TAG_BOTTOM_SHEET_BUSCA_LOCALIZACAO);
     }
 
     private void navegarDeVolta() {
-        NavHostFragment.findNavController(this).popBackStack();
+        NavigationHelper.voltar(this);
     }
 
     private double resolverDistanciaAtiva() {

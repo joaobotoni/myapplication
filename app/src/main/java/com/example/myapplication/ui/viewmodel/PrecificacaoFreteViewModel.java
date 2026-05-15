@@ -23,6 +23,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class PrecificacaoFreteViewModel extends ViewModel {
     private final FreteRepository repositorio;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final PrecificacaoFreteMapper precificacaoFreteMapper;
     private final MutableLiveData<PrecificacaoFreteState> state = new MutableLiveData<>(null);
     private final MutableLiveData<BigDecimal> incidencia = new MutableLiveData<>(BigDecimal.ZERO);
@@ -60,25 +61,32 @@ public class PrecificacaoFreteViewModel extends ViewModel {
     }
 
     public void calcularFrete(List<Transporte> transportes, double distancia, int cargaTotal, BigDecimal pesoMedio) {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> precificacaoFreteMapper.mapFrom(repositorio.calcularFrete(transportes, distancia, cargaTotal, pesoMedio)),
                 state::postValue,
                 error::postValue
-        );
+        ));
     }
 
     public void calcularIncidencia(BigDecimal valorDoFrete, BigDecimal pesoMedio, int totalCarga, FreteState freteState) {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> repositorio.calcularIncidenciaFretePorKg(valorDoFrete, pesoMedio, totalCarga),
                 resultadoIncidencia -> {
-                    incidencia.postValue(resultadoIncidencia);
-                    state.postValue(new PrecificacaoFreteState(valorDoFrete, resultadoIncidencia, freteState));
+                    incidencia.setValue(resultadoIncidencia);
+                    state.setValue(new PrecificacaoFreteState(valorDoFrete, resultadoIncidencia, freteState));
                 },
                 error::postValue
-        );
+        ));
     }
+
     public void limpar() {
         state.setValue(null);
         incidencia.setValue(null);
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 }

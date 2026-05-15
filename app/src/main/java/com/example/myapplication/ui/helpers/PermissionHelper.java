@@ -14,6 +14,11 @@ import java.util.Map;
 
 
 public final class PermissionHelper {
+
+    private PermissionHelper() {
+        throw new AssertionError("PermissionHelper is a utility class and must not be instantiated.");
+    }
+
     public static boolean hasPermissions(@Nullable Context context, @NonNull String... permissions) {
         if (context == null) return false;
         for (String permission : permissions) {
@@ -28,7 +33,9 @@ public final class PermissionHelper {
     public static ActivityResultLauncher<String[]> register(@NonNull Fragment fragment, @NonNull OnPermissionResultListener listener) {
         return fragment.registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
-                result -> { if (result != null) listener.onResult(!result.containsValue(false), result); }
+                result -> {
+                    if (result != null) listener.onResult(!result.containsValue(false), result);
+                }
         );
     }
 

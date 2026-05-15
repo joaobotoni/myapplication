@@ -21,6 +21,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class RotaViewModel extends ViewModel {
     private final LocalizacaoRepository repositorio;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<RotaState> state = new MutableLiveData<>();
     private final MutableLiveData<Throwable> error = new MutableLiveData<>();
     private final RotaMapper rotaMapper;
@@ -41,11 +42,11 @@ public class RotaViewModel extends ViewModel {
     }
 
     public void selecionar(Address origem, String destinoQuery) {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> calcularRota(origem, destinoQuery),
                 state::postValue,
                 error::postValue
-        );
+        ));
     }
 
     private RotaState calcularRota(Address origem, String destinoQuery) throws Exception {
@@ -56,5 +57,11 @@ public class RotaViewModel extends ViewModel {
 
     public void limpar() {
         state.setValue(null);
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 }

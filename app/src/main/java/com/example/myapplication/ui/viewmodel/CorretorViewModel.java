@@ -22,6 +22,7 @@ public class CorretorViewModel extends ViewModel {
     private final CorretorRepository repositorio;
     private final CorretorMapper mapper;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<List<CorretorState>> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
     private final MutableLiveData<CorretorState> corretorSelecionado = new MutableLiveData<>(null);
@@ -67,13 +68,19 @@ public class CorretorViewModel extends ViewModel {
     }
 
     private void listarCorretores() {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> repositorio.getAll().stream()
                         .map(mapper::mapFrom)
                         .collect(Collectors.toList()),
                 state::postValue,
                 error::postValue
-        );
+        ));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 
     public void limparSelecao() {

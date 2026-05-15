@@ -17,6 +17,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
 public class BuscaLocalizacaoViewModel extends ViewModel {
     private final LocalizacaoRepository repositorio;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<BuscaLocalizacaoState> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
     @Inject
@@ -34,7 +35,7 @@ public class BuscaLocalizacaoViewModel extends ViewModel {
     }
 
     public void buscar(String consulta, double latitude, double longitude) {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> {
                     String codigo = repositorio.paisDeCoordenadas(latitude, longitude).orElseThrow(() ->
                             new RuntimeException("Código do pais não encontrado"));
@@ -42,6 +43,12 @@ public class BuscaLocalizacaoViewModel extends ViewModel {
                 },
                 state::postValue,
                 error::postValue
-        );
+        ));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 }

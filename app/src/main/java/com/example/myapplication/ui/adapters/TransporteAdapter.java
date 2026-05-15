@@ -36,14 +36,7 @@ public class TransporteAdapter extends ListAdapter<TransporteState, TransporteAd
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(getItem(position));
-        holder.applyLayoutForDisplayMode(getItemCount() == 1);
-    }
-
-    @Override
-    public void onViewAttachedToWindow(@NonNull ViewHolder holder) {
-        super.onViewAttachedToWindow(holder);
-        holder.applyLayoutForDisplayMode(getItemCount() == 1);
+        holder.bind(getItem(position), getItemCount() == 1);
     }
 
     @Override
@@ -61,26 +54,27 @@ public class TransporteAdapter extends ListAdapter<TransporteState, TransporteAd
             this.binding = binding;
         }
 
-        void bind(TransporteState estado) {
+        void bind(TransporteState estado, boolean isSingleItem) {
             Context context = itemView.getContext();
-            setText(binding.textoTipoVeiculo, estado.nomeVeiculo);
-            setPluralText(binding.textoQuantidadeVeiculos, context, R.plurals.plural_quantidade_veiculos, estado.quantidade);
-            setText(binding.textoCapacidadeCabecas, context, R.string.formato_capacidade_cabecas, estado.capacidade);
-            setText(binding.textoPorcentagemOcupada, context, R.string.formato_numero_percentual, estado.ocupacao);
+            setText(binding.textoTipoVeiculo, estado.getNomeVeiculo());
+            setPluralText(binding.textoQuantidadeVeiculos, context, R.plurals.plural_quantidade_veiculos, estado.getQuantidade());
+            setText(binding.textoCapacidadeCabecas, context, R.string.formato_capacidade_cabecas, estado.getCapacidade());
+            setText(binding.textoPorcentagemOcupada, context, R.string.formato_numero_percentual, estado.getOcupacao());
+            aplicarLayoutPorModo(isSingleItem);
         }
 
-        void applyLayoutForDisplayMode(boolean isSingleItem) {
-            applyItemWidthConstraint(isSingleItem);
-            applyCardEndMargin(isSingleItem, itemView.getContext());
+        private void aplicarLayoutPorModo(boolean isSingleItem) {
+            aplicarLarguraDoItem(isSingleItem);
+            aplicarMargemFinalDoCard(isSingleItem, itemView.getContext());
         }
 
-        private void applyItemWidthConstraint(boolean isSingleItem) {
+        private void aplicarLarguraDoItem(boolean isSingleItem) {
             ViewGroup.LayoutParams params = itemView.getLayoutParams();
             params.width = isSingleItem ? ViewGroup.LayoutParams.MATCH_PARENT : ViewGroup.LayoutParams.WRAP_CONTENT;
             itemView.setLayoutParams(params);
         }
 
-        private void applyCardEndMargin(boolean isSingleItem, Context context) {
+        private void aplicarMargemFinalDoCard(boolean isSingleItem, Context context) {
             ViewGroup.MarginLayoutParams cardParams = (ViewGroup.MarginLayoutParams) binding.getRoot().getLayoutParams();
             int margin = isSingleItem ? 0 : (int) (12 * context.getResources().getDisplayMetrics().density);
             cardParams.setMarginEnd(margin);
@@ -91,16 +85,16 @@ public class TransporteAdapter extends ListAdapter<TransporteState, TransporteAd
     private static class DiffCallback extends DiffUtil.ItemCallback<TransporteState> {
         @Override
         public boolean areItemsTheSame(@NonNull TransporteState oldItem, @NonNull TransporteState newItem) {
-            return oldItem.id == newItem.id;
+            return oldItem.getId() == newItem.getId();
         }
 
         @Override
         public boolean areContentsTheSame(@NonNull TransporteState oldItem, @NonNull TransporteState newItem) {
-            return Objects.equals(oldItem.id, newItem.id)
-                    && Objects.equals(oldItem.nomeVeiculo, newItem.nomeVeiculo)
-                    && Objects.equals(oldItem.quantidade, newItem.quantidade)
-                    && Objects.equals(oldItem.capacidade, newItem.capacidade)
-                    && Objects.equals(oldItem.ocupacao, newItem.ocupacao);
+            return Objects.equals(oldItem.getId(), newItem.getId())
+                    && Objects.equals(oldItem.getNomeVeiculo(), newItem.getNomeVeiculo())
+                    && Objects.equals(oldItem.getQuantidade(), newItem.getQuantidade())
+                    && Objects.equals(oldItem.getCapacidade(), newItem.getCapacidade())
+                    && Objects.equals(oldItem.getOcupacao(), newItem.getOcupacao());
         }
     }
 }

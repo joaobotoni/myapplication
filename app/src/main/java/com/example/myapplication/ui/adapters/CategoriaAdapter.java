@@ -31,26 +31,30 @@ public class CategoriaAdapter extends ListAdapter<CategoriaState, CategoriaAdapt
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(ItemCategoriaBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        return new ViewHolder(ItemCategoriaBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(getItem(position), listener);
+        holder.bind(getItem(position));
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         private final ItemCategoriaBinding binding;
+        private CategoriaState item;
 
-        public ViewHolder(ItemCategoriaBinding binding) {
+        public ViewHolder(ItemCategoriaBinding binding, OnClickListener listener) {
             super(binding.getRoot());
             this.binding = binding;
+            binding.cardOpcao.setOnClickListener(v -> {
+                if (item != null) listener.onClick(item);
+            });
         }
 
-        protected void bind(CategoriaState estado, OnClickListener listener) {
-            setText(binding.textoOpcao,estado.getDescricao());
+        protected void bind(CategoriaState estado) {
+            this.item = estado;
+            setText(binding.textoOpcao, estado.getDescricao());
             binding.cardOpcao.setChecked(estado.isSelected());
-            binding.cardOpcao.setOnClickListener(v -> listener.onClick(estado));
         }
     }
 

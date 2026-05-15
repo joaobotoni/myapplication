@@ -13,12 +13,14 @@ import com.google.android.material.snackbar.Snackbar;
 
 public final class AlertHelper {
 
+    private AlertHelper(){
+        throw new AssertionError("AlertHelper is a utility class and must not be instantiated.");
+    }
     public static void showSnackBarSucesso(View view, String message) {
         if (view != null && message != null) {
             Snackbar.make(view, message, Snackbar.LENGTH_LONG)
                     .setBackgroundTint(
-                            ContextCompat.getColor(view.getContext(), android.R.color.holo_green_dark)
-                    )
+                            ContextCompat.getColor(view.getContext(), android.R.color.holo_green_dark))
                     .setTextColor(Color.WHITE)
                     .show();
         }
@@ -28,8 +30,7 @@ public final class AlertHelper {
         if (view != null && message != null) {
             Snackbar.make(view, message, Snackbar.LENGTH_LONG)
                     .setBackgroundTint(
-                            ContextCompat.getColor(view.getContext(), android.R.color.holo_red_dark)
-                    )
+                            ContextCompat.getColor(view.getContext(), android.R.color.holo_red_dark))
                     .setTextColor(Color.WHITE)
                     .show();
         }

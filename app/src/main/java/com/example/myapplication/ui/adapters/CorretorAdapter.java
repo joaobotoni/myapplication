@@ -32,27 +32,31 @@ public class CorretorAdapter extends ListAdapter<CorretorState, CorretorAdapter.
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(ItemCorretorBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        return new ViewHolder(ItemCorretorBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(getItem(position), listener);
+        holder.bind(getItem(position));
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final ItemCorretorBinding binding;
+        private CorretorState item;
 
-        public ViewHolder(@NonNull ItemCorretorBinding binding) {
+        public ViewHolder(@NonNull ItemCorretorBinding binding, OnClickListener listener) {
             super(binding.getRoot());
             this.binding = binding;
+            binding.getRoot().setOnClickListener(v -> {
+                if (item != null) listener.onClick(item);
+            });
         }
 
-        protected void bind(CorretorState item, OnClickListener listener) {
-            setText(binding.textoNomeCorretor, item.getNome());
-            setText(binding.textoComissao, formatCurrency(item.getComissao()));
-            setVisible(item.isSelected(), binding.checkImage);
-            binding.getRoot().setOnClickListener(v -> listener.onClick(item));
+        protected void bind(CorretorState corretor) {
+            this.item = corretor;
+            setText(binding.textoNomeCorretor, corretor.getNome());
+            setText(binding.textoComissao, formatCurrency(corretor.getComissao()));
+            setVisible(corretor.isSelected(), binding.checkImage);
         }
     }
 

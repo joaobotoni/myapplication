@@ -22,6 +22,7 @@ public class RacaViewModel extends ViewModel {
     private final RacaRepository repositorio;
     private final RacaMapper mapper;
     private final TaskHelper taskHelper;
+    private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final MutableLiveData<List<RacaState>> state = new MutableLiveData<>(null);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
     private final MutableLiveData<RacaState> racaSelecionada = new MutableLiveData<>(null);
@@ -65,12 +66,18 @@ public class RacaViewModel extends ViewModel {
     }
 
     private void listarRacas() {
-        taskHelper.execute(
+        tarefas.adicionar(taskHelper.execute(
                 () -> repositorio.getAll().stream()
                         .map(mapper::mapFrom)
                         .collect(Collectors.toList()),
                 state::postValue,
                 error::postValue
-        );
+        ));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 }

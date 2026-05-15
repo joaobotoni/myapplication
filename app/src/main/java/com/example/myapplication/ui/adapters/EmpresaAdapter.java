@@ -32,26 +32,30 @@ public class EmpresaAdapter extends ListAdapter<EmpresaState, EmpresaAdapter.Vie
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(ItemEmpresaBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        return new ViewHolder(ItemEmpresaBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), clickListener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(getItem(position), clickListener);
+        holder.bind(getItem(position));
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         private final ItemEmpresaBinding binding;
+        private EmpresaState item;
 
-        public ViewHolder(@NonNull ItemEmpresaBinding binding) {
+        public ViewHolder(@NonNull ItemEmpresaBinding binding, OnClickListener listener) {
             super(binding.getRoot());
             this.binding = binding;
+            binding.getRoot().setOnClickListener(v -> {
+                if (item != null) listener.onClick(item);
+            });
         }
 
-        protected void bind(EmpresaState item, OnClickListener listener) {
-            setText(binding.textoNomeEmpresa, item.getNome());
-            setVisible(item.isSelected(), binding.checkImage);
-            binding.getRoot().setOnClickListener(v -> listener.onClick(item));
+        protected void bind(EmpresaState empresa) {
+            this.item = empresa;
+            setText(binding.textoNomeEmpresa, empresa.getNome());
+            setVisible(empresa.isSelected(), binding.checkImage);
         }
     }
 

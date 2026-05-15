@@ -31,26 +31,30 @@ public class RacaAdapter extends ListAdapter<RacaState, RacaAdapter.ViewHolder> 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(ItemRacaBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        return new ViewHolder(ItemRacaBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.bind(getItem(position), listener);
+        holder.bind(getItem(position));
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         private final ItemRacaBinding binding;
+        private RacaState item;
 
-        public ViewHolder(ItemRacaBinding binding) {
+        public ViewHolder(ItemRacaBinding binding, OnClickListener listener) {
             super(binding.getRoot());
             this.binding = binding;
+            binding.cardOpcao.setOnClickListener(v -> {
+                if (item != null) listener.onClick(item);
+            });
         }
 
-        protected void bind(RacaState estado, OnClickListener listener) {
-            setText(binding.textoOpcao,estado.getDescricao());
+        protected void bind(RacaState estado) {
+            this.item = estado;
+            setText(binding.textoOpcao, estado.getDescricao());
             binding.cardOpcao.setChecked(estado.isSelected());
-            binding.cardOpcao.setOnClickListener(v -> listener.onClick(estado));
         }
     }
 
