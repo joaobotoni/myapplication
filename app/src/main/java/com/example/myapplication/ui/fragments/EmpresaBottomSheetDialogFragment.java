@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.myapplication.databinding.FragmentBottomSheetEmpresaBinding;
 import com.example.myapplication.ui.adapters.EmpresaAdapter;
-import com.example.myapplication.ui.state.EmpresaState;
+import com.example.myapplication.ui.state.empresa.EmpresaState;
 import com.example.myapplication.ui.viewmodel.EmpresaViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 

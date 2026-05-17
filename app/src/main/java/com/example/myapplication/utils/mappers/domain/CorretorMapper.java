@@ -1,7 +1,7 @@
 package com.example.myapplication.utils.mappers.domain;
 
 import com.example.myapplication.data.source.local.entities.Corretor;
-import com.example.myapplication.ui.state.CorretorState;
+import com.example.myapplication.ui.state.empresa.CorretorState;
 import com.example.myapplication.utils.mappers.Mapper;
 
 import java.math.BigDecimal;

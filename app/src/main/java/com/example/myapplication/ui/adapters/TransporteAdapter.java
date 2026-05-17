@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.ItemTransporteBinding;
-import com.example.myapplication.ui.state.TransporteState;
+import com.example.myapplication.ui.state.frete.TransporteState;
 
 import java.util.List;
 import java.util.Objects;

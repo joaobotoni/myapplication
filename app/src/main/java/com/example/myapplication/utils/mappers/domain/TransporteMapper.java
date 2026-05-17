@@ -2,7 +2,7 @@ package com.example.myapplication.utils.mappers.domain;
 
 
 import com.example.myapplication.data.models.Transporte;
-import com.example.myapplication.ui.state.TransporteState;
+import com.example.myapplication.ui.state.frete.TransporteState;
 import com.example.myapplication.utils.mappers.Mapper;
 
 import java.util.List;

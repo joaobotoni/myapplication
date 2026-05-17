@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModel;
 import com.example.myapplication.data.models.Rota;
 import com.example.myapplication.data.repositories.LocalizacaoRepository;
 import com.example.myapplication.ui.helpers.TaskHelper;
-import com.example.myapplication.ui.state.RotaState;
+import com.example.myapplication.ui.state.frete.RotaState;
 import com.example.myapplication.utils.mappers.domain.RotaMapper;
 
 import javax.inject.Inject;

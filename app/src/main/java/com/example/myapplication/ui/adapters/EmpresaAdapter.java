@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.databinding.ItemEmpresaBinding;
-import com.example.myapplication.ui.state.EmpresaState;
+import com.example.myapplication.ui.state.empresa.EmpresaState;
 
 import java.util.Objects;
 

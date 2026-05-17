@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.myapplication.databinding.FragmentBottomSheetCorretorBinding;
 import com.example.myapplication.ui.adapters.CorretorAdapter;
-import com.example.myapplication.ui.state.CorretorState;
+import com.example.myapplication.ui.state.empresa.CorretorState;
 import com.example.myapplication.ui.viewmodel.CorretorViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 

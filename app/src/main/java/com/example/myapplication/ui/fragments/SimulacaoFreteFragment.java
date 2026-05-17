@@ -41,9 +41,9 @@ import com.example.myapplication.data.models.Transporte;
 import com.example.myapplication.databinding.FragmentSimulacaoFreteBinding;
 import com.example.myapplication.ui.adapters.TransporteAdapter;
 import com.example.myapplication.ui.state.animal.CategoriaState;
-import com.example.myapplication.ui.state.PrecificacaoFreteState;
-import com.example.myapplication.ui.state.RotaState;
-import com.example.myapplication.ui.state.TransporteState;
+import com.example.myapplication.ui.state.frete.FreteState;
+import com.example.myapplication.ui.state.frete.RotaState;
+import com.example.myapplication.ui.state.frete.TransporteState;
 import com.example.myapplication.ui.viewmodel.CategoriaViewModel;
 import com.example.myapplication.ui.viewmodel.PrecificacaoFreteViewModel;
 import com.example.myapplication.ui.viewmodel.RotaViewModel;
@@ -82,7 +82,7 @@ public class SimulacaoFreteFragment extends Fragment {
     private double pesoMedio;
     private RotaState rotaAtual;
     private List<TransporteState> transportesAtuais;
-    private PrecificacaoFreteState freteAtual;
+    private FreteState freteAtual;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -233,7 +233,7 @@ public class SimulacaoFreteFragment extends Fragment {
         sincronizarEstado();
     }
 
-    private void aoAtualizarResumoDoFrete(PrecificacaoFreteState estado) {
+    private void aoAtualizarResumoDoFrete(FreteState estado) {
         freteAtual = estado;
         exibirContainerResumo(isFreteCalculado());
         if (isFreteSemEstado()) return;
@@ -309,7 +309,7 @@ public class SimulacaoFreteFragment extends Fragment {
         setText(binding.textoValorDistancia, String.valueOf(rota.getDistancia()));
     }
 
-    private void exibirValoresDoResumo(@NonNull PrecificacaoFreteState estado) {
+    private void exibirValoresDoResumo(@NonNull FreteState estado) {
         setText(binding.textoValorPrincipal, formatCurrency(estado.getValorTotal()));
         setText(binding.textoValorSecundario, formatCurrency(estado.getValorParcial()));
     }

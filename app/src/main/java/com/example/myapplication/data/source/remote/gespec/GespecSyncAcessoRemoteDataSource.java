@@ -18,7 +18,6 @@ import jakarta.inject.Inject;
 
 public class GespecSyncAcessoRemoteDataSource {
     private final Context context;
-
     @Inject
     public GespecSyncAcessoRemoteDataSource(@ApplicationContext Context context) {
         this.context = context;

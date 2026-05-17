@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.state;
+package com.example.myapplication.ui.state.empresa;
 
 public class EmpresaState {
 

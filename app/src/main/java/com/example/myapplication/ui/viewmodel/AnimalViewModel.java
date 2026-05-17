@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.myapplication.ui.state.animal.AnimalState;
 import com.example.myapplication.ui.state.animal.CategoriaState;
-import com.example.myapplication.ui.state.animal.EspecificacaoAnimalState;
+import com.example.myapplication.ui.state.animal.AnimalEspecificacaoState;
 import com.example.myapplication.ui.state.animal.RacaState;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
@@ -16,7 +16,7 @@ import jakarta.inject.Inject;
 public class AnimalViewModel extends ViewModel {
     private RacaState raca;
     private CategoriaState categoria;
-    private EspecificacaoAnimalState especificacao;
+    private AnimalEspecificacaoState especificacao;
     private final MutableLiveData<AnimalState> animalState = new MutableLiveData<>(null);
 
     @Inject
@@ -38,7 +38,7 @@ public class AnimalViewModel extends ViewModel {
     }
 
     public void atualizarEspecificacao(String sexo, Integer idade) {
-        this.especificacao = new EspecificacaoAnimalState(sexo, idade);
+        this.especificacao = new AnimalEspecificacaoState(sexo, idade);
         animalState.setValue(build());
     }
 

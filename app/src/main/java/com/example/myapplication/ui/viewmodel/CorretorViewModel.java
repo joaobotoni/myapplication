@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.myapplication.data.repositories.CorretorRepository;
 import com.example.myapplication.ui.helpers.TaskHelper;
-import com.example.myapplication.ui.state.CorretorState;
+import com.example.myapplication.ui.state.empresa.CorretorState;
 import com.example.myapplication.utils.mappers.domain.CorretorMapper;
 
 import java.util.List;

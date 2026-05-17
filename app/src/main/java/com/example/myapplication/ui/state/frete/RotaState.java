@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.state;
+package com.example.myapplication.ui.state.frete;
 
 public class RotaState {
     private final String cidadeOrigem;

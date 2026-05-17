@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.myapplication.data.repositories.TransporteRepository;
 import com.example.myapplication.ui.helpers.TaskHelper;
-import com.example.myapplication.ui.state.TransporteState;
+import com.example.myapplication.ui.state.frete.TransporteState;
 import com.example.myapplication.utils.mappers.domain.TransporteMapper;
 
 import java.util.List;

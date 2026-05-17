@@ -1,10 +1,11 @@
 package com.example.myapplication.ui.viewmodel;
 
+import static com.example.myapplication.ui.state.negociacao.StatusNegociacao.NEGOCIADA;
+import static com.example.myapplication.ui.state.negociacao.StatusNegociacao.PRE_CALCULADA;
 import static com.example.myapplication.utils.DecimalUtil.ARREDONDAMENTO_PADRAO;
 import static com.example.myapplication.utils.DecimalUtil.CEM;
 import static com.example.myapplication.utils.DecimalUtil.ESCALA_CALCULO;
 import static com.example.myapplication.utils.DecimalUtil.ESCALA_MONETARIA;
-
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -19,13 +20,14 @@ import com.example.myapplication.domain.implementation.PrecificacaoBezerroImplem
 import com.example.myapplication.domain.strategy.PrecificacaoBezerroComFreteEComissao;
 import com.example.myapplication.domain.strategy.PrecificacaoBezerroSemFrete;
 import com.example.myapplication.ui.helpers.TaskHelper;
-import com.example.myapplication.ui.state.FreteState;
+import com.example.myapplication.ui.state.frete.StatusFrete;
 import com.example.myapplication.ui.state.negociacao.CotacaoState;
 import com.example.myapplication.ui.state.negociacao.FechamentoState;
 import com.example.myapplication.ui.state.negociacao.NegociacaoState;
 import com.example.myapplication.ui.state.negociacao.PropostaState;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 import dagger.hilt.android.lifecycle.HiltViewModel;
 import jakarta.inject.Inject;
@@ -70,71 +72,57 @@ public class NegociacaoViewModel extends ViewModel {
         return error;
     }
 
-    public void processarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
+    public void processarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, StatusFrete statusFrete, BigDecimal comissaoTotal) {
         tarefas.adicionar(taskHelper.execute(
-                () -> criarNegociacao(cotacao, peso, quantidade, freteTotalLote, freteState, comissaoTotal),
+                () -> criarNegociacao(cotacao, peso, quantidade, freteTotalLote, statusFrete, comissaoTotal),
                 state::postValue,
                 error::postValue
         ));
     }
 
-    public void recalcularPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+    public void recalcularPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, StatusFrete statusFrete) {
         tarefas.adicionar(taskHelper.execute(
-                () -> atualizarPropostaPorKg(cotacao, fechamento, novoValorPorKg, peso, quantidade, fretePorKg, freteState),
+                () -> atualizarPropostaPorKg(cotacao, fechamento, novoValorPorKg, peso, quantidade, fretePorKg, statusFrete),
                 state::postValue,
                 error::postValue
         ));
     }
 
-    public void recalcularPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+    public void recalcularPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, StatusFrete statusFrete) {
         tarefas.adicionar(taskHelper.execute(
-                () -> atualizarPropostaPorCabeca(cotacao, fechamento, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState),
+                () -> atualizarPropostaPorCabeca(cotacao, fechamento, novoValorPorCabeca, peso, quantidade, fretePorKg, statusFrete),
                 state::postValue,
                 error::postValue
         ));
     }
 
-    public void limpar() {
-        state.setValue(new NegociacaoState(null, null, null));
-    }
-
-    public void limparParcialmente(CotacaoState cotacao) {
-        state.setValue(new NegociacaoState(cotacao, null, null));
-    }
-
-    @Override
-    protected void onCleared() {
-        super.onCleared();
-        tarefas.cancelarTudo();
-    }
-
-    private NegociacaoState criarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, FreteState freteState, BigDecimal comissaoTotal) {
+    private NegociacaoState criarNegociacao(CotacaoState cotacao, BigDecimal peso, Integer quantidade, BigDecimal freteTotalLote, StatusFrete statusFrete, BigDecimal comissaoTotal) {
         BigDecimal fretePorKg = distribuirFretePorKg(freteTotalLote, peso, quantidade);
-        PropostaState proposta = precificarProposta(peso, quantidade, fretePorKg, freteState);
+        PropostaState proposta = precificarProposta(peso, quantidade, fretePorKg, statusFrete);
         BigDecimal comissaoPorKg = distribuirComissaoPorKg(comissaoTotal, peso);
         FechamentoState fechamento = precificarFechamento(peso, quantidade, comissaoPorKg);
-        return new NegociacaoState(cotacao, proposta, fechamento);
+        return new NegociacaoState(cotacao, proposta, fechamento , PRE_CALCULADA);
     }
 
-    private NegociacaoState atualizarPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+    private NegociacaoState atualizarPropostaPorKg(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorKg, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, StatusFrete statusFrete) {
         BigDecimal novoValorPorCabeca = converterKgParaCabeca(novoValorPorKg, peso);
-        return atualizarPropostaEFechamento(cotacao, fechamento, novoValorPorKg, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState);
+        return atualizarPropostaEFechamento(cotacao, fechamento, novoValorPorKg, novoValorPorCabeca, peso, quantidade, fretePorKg, statusFrete);
     }
 
-    private NegociacaoState atualizarPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+    private NegociacaoState atualizarPropostaPorCabeca(CotacaoState cotacao, FechamentoState fechamento, BigDecimal novoValorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, StatusFrete statusFrete) {
         BigDecimal novoValorPorKg = converterCabecaParaKg(novoValorPorCabeca, peso);
-        return atualizarPropostaEFechamento(cotacao, fechamento, novoValorPorKg, novoValorPorCabeca, peso, quantidade, fretePorKg, freteState);
+        return atualizarPropostaEFechamento(cotacao, fechamento, novoValorPorKg, novoValorPorCabeca, peso, quantidade, fretePorKg, statusFrete);
     }
 
-    private NegociacaoState atualizarPropostaEFechamento(CotacaoState cotacao, FechamentoState fechamento, BigDecimal valorPorKg, BigDecimal valorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
-        PropostaState propostaReajustada = novaProposta(valorPorKg, valorPorCabeca, quantidade, fretePorKg, freteState);
+    private NegociacaoState atualizarPropostaEFechamento(CotacaoState cotacao, FechamentoState fechamento, BigDecimal valorPorKg, BigDecimal valorPorCabeca, BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, StatusFrete statusFrete) {
+        PropostaState propostaReajustada = novaProposta(valorPorKg, valorPorCabeca, quantidade, fretePorKg, statusFrete);
         FechamentoState fechamentoReajustado = atualizarFechamento(fechamento, valorPorKg, fretePorKg, peso, quantidade);
-        return new NegociacaoState(cotacao, propostaReajustada, fechamentoReajustado);
+        return new NegociacaoState(cotacao, propostaReajustada, fechamentoReajustado, NEGOCIADA);
     }
 
-    private PropostaState precificarProposta(BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
+    private PropostaState precificarProposta(BigDecimal peso, Integer quantidade, BigDecimal fretePorKg, StatusFrete statusFrete) {
         PrecificacaoBezerro p = precificar(new PrecificacaoBezerroSemFrete(precificacaoBezerroRepository, fretePorKg), peso, quantidade);
-        return novaProposta(p.getValorPorKg(), p.getValorPorCabeca(), quantidade, fretePorKg, freteState);
+        return novaProposta(p.getValorPorKg(), p.getValorPorCabeca(), quantidade, fretePorKg, statusFrete);
     }
 
     private FechamentoState precificarFechamento(BigDecimal peso, Integer quantidade, BigDecimal comissaoPorKg) {
@@ -146,8 +134,8 @@ public class NegociacaoViewModel extends ViewModel {
         return new PrecificacaoBezerroImplementation(strategy, valorReferenciaRepository).executar(peso, quantidade);
     }
 
-    private PropostaState novaProposta(BigDecimal valorPorKg, BigDecimal valorPorCabeca, Integer quantidade, BigDecimal fretePorKg, FreteState freteState) {
-        return new PropostaState(valorPorKg, valorPorCabeca, calcularTotalLote(valorPorCabeca, quantidade), fretePorKg, freteState);
+    private PropostaState novaProposta(BigDecimal valorPorKg, BigDecimal valorPorCabeca, Integer quantidade, BigDecimal fretePorKg, StatusFrete statusFrete) {
+        return new PropostaState(valorPorKg, valorPorCabeca, calcularTotalLote(valorPorCabeca, quantidade), fretePorKg, statusFrete);
     }
 
     private FechamentoState novoFechamento(BigDecimal valorPorKg, BigDecimal valorPorCabeca, BigDecimal valorTotal, BigDecimal comissaoPorKg) {
@@ -201,5 +189,24 @@ public class NegociacaoViewModel extends ViewModel {
                 .multiply(CEM)
                 .setScale(ESCALA_MONETARIA, ARREDONDAMENTO_PADRAO)
                 .doubleValue();
+    }
+
+    public boolean isNegociada() {
+        NegociacaoState s = state.getValue();
+        return s != null && s.isNegociada();
+    }
+
+    public void limpar() {
+        state.setValue(new NegociacaoState(null, null, null));
+    }
+
+    public void limparParcialmente(CotacaoState cotacao) {
+        state.setValue(new NegociacaoState(cotacao, null, null));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        tarefas.cancelarTudo();
     }
 }

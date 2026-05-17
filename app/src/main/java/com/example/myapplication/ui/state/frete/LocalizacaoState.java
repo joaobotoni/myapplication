@@ -1,18 +1,18 @@
-package com.example.myapplication.ui.state;
+package com.example.myapplication.ui.state.frete;
 
 import android.location.Address;
 
 import java.util.Collections;
 import java.util.List;
 
-public class BuscaLocalizacaoState {
+public class LocalizacaoState {
     private final List<Address> localizacoes;
     private final boolean carregando;
-    public BuscaLocalizacaoState() {
+    public LocalizacaoState() {
         this.localizacoes = Collections.emptyList();
         this.carregando = false;
     }
-    public BuscaLocalizacaoState(List<Address> localizacoes, boolean carregando) {
+    public LocalizacaoState(List<Address> localizacoes, boolean carregando) {
         this.localizacoes = localizacoes;
         this.carregando = carregando;
     }

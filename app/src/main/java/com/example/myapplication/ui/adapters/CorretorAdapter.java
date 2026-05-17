@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.databinding.ItemCorretorBinding;
-import com.example.myapplication.ui.state.CorretorState;
+import com.example.myapplication.ui.state.empresa.CorretorState;
 
 import java.util.Objects;
 

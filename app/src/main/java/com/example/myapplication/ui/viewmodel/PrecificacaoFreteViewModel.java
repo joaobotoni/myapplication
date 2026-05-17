@@ -4,12 +4,11 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.myapplication.data.models.PrecificacaoFrete;
 import com.example.myapplication.data.models.Transporte;
 import com.example.myapplication.data.repositories.FreteRepository;
 import com.example.myapplication.ui.helpers.TaskHelper;
-import com.example.myapplication.ui.state.FreteState;
-import com.example.myapplication.ui.state.PrecificacaoFreteState;
+import com.example.myapplication.ui.state.frete.StatusFrete;
+import com.example.myapplication.ui.state.frete.FreteState;
 import com.example.myapplication.utils.mappers.domain.PrecificacaoFreteMapper;
 
 import java.math.BigDecimal;
@@ -25,7 +24,7 @@ public class PrecificacaoFreteViewModel extends ViewModel {
     private final TaskHelper taskHelper;
     private final TaskHelper.Cancellables tarefas = new TaskHelper.Cancellables();
     private final PrecificacaoFreteMapper precificacaoFreteMapper;
-    private final MutableLiveData<PrecificacaoFreteState> state = new MutableLiveData<>(null);
+    private final MutableLiveData<FreteState> state = new MutableLiveData<>(null);
     private final MutableLiveData<BigDecimal> incidencia = new MutableLiveData<>(BigDecimal.ZERO);
     private final MutableLiveData<Double> distancia = new MutableLiveData<>(0.0);
     private final MutableLiveData<Throwable> error = new MutableLiveData<>(null);
@@ -41,7 +40,7 @@ public class PrecificacaoFreteViewModel extends ViewModel {
         this.precificacaoFreteMapper = precificacaoFreteMapper;
     }
 
-    public LiveData<PrecificacaoFreteState> getState() {
+    public LiveData<FreteState> getState() {
         return state;
     }
 
@@ -68,12 +67,12 @@ public class PrecificacaoFreteViewModel extends ViewModel {
         ));
     }
 
-    public void calcularIncidencia(BigDecimal valorDoFrete, BigDecimal pesoMedio, int totalCarga, FreteState freteState) {
+    public void calcularIncidencia(BigDecimal valorDoFrete, BigDecimal pesoMedio, int totalCarga, StatusFrete statusFrete) {
         tarefas.adicionar(taskHelper.execute(
                 () -> repositorio.calcularIncidenciaFretePorKg(valorDoFrete, pesoMedio, totalCarga),
                 resultadoIncidencia -> {
                     incidencia.setValue(resultadoIncidencia);
-                    state.setValue(new PrecificacaoFreteState(valorDoFrete, resultadoIncidencia, freteState));
+                    state.setValue(new FreteState(valorDoFrete, resultadoIncidencia, statusFrete));
                 },
                 error::postValue
         ));

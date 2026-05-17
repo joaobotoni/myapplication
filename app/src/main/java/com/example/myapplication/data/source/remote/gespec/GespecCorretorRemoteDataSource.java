@@ -34,9 +34,7 @@ public class GespecCorretorRemoteDataSource {
     private String buildUrl(Configuration config, String path) {
         return context.getString(R.string.url_negociacao_gespec,
                 config.host,
-                config.port,
-                path,
-                config.username
+                config.port
         );
     }
 

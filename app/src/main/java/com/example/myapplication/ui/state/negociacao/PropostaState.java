@@ -1,6 +1,6 @@
 package com.example.myapplication.ui.state.negociacao;
 
-import com.example.myapplication.ui.state.FreteState;
+import com.example.myapplication.ui.state.frete.StatusFrete;
 
 import java.math.BigDecimal;
 
@@ -9,16 +9,16 @@ public class PropostaState {
     private final BigDecimal valorPorCabeca;
     private final BigDecimal valorTotal;
     private final BigDecimal fretePorKg;
-    private final FreteState freteState;
+    private final StatusFrete statusFrete;
     private final boolean isFreteDescontado;
 
-    public PropostaState(BigDecimal valorPorKg, BigDecimal valorPorCabeca, BigDecimal valorTotal, BigDecimal fretePorKg, FreteState freteState) {
+    public PropostaState(BigDecimal valorPorKg, BigDecimal valorPorCabeca, BigDecimal valorTotal, BigDecimal fretePorKg, StatusFrete statusFrete) {
         this.valorPorKg = valorPorKg;
         this.valorPorCabeca = valorPorCabeca;
         this.valorTotal = valorTotal;
         this.fretePorKg = fretePorKg;
-        this.isFreteDescontado = freteState != null && freteState != FreteState.NAO_SELECIONADO;
-        this.freteState = freteState;
+        this.isFreteDescontado = statusFrete != null && statusFrete != StatusFrete.NAO_SELECIONADO;
+        this.statusFrete = statusFrete;
     }
 
     public BigDecimal getValorPorKg() {
@@ -37,8 +37,8 @@ public class PropostaState {
         return fretePorKg;
     }
 
-    public FreteState getFreteState() {
-        return freteState;
+    public StatusFrete getFreteState() {
+        return statusFrete;
     }
 
     public boolean isFreteDescontado() {

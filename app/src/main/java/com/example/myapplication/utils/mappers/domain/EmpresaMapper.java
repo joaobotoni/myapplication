@@ -1,7 +1,7 @@
 package com.example.myapplication.utils.mappers.domain;
 
 import com.example.myapplication.data.source.local.entities.Empresa;
-import com.example.myapplication.ui.state.EmpresaState;
+import com.example.myapplication.ui.state.empresa.EmpresaState;
 import com.example.myapplication.utils.mappers.Mapper;
 
 import javax.inject.Inject;

@@ -3,7 +3,7 @@ package com.example.myapplication.utils.mappers.domain;
 
 
 import com.example.myapplication.data.models.Rota;
-import com.example.myapplication.ui.state.RotaState;
+import com.example.myapplication.ui.state.frete.RotaState;
 import com.example.myapplication.utils.mappers.Mapper;
 
 import javax.inject.Inject;

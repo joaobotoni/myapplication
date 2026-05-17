@@ -1,9 +1,9 @@
 package com.example.myapplication.ui.state.animal;
 
-public class EspecificacaoAnimalState {
+public class AnimalEspecificacaoState {
     private final String sexo;
     private final Integer idade;
-    public EspecificacaoAnimalState(String sexo, Integer idade) {
+    public AnimalEspecificacaoState(String sexo, Integer idade) {
         this.sexo = sexo;
         this.idade = idade;
     }

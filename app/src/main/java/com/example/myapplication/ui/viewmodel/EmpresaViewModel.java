@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.myapplication.data.repositories.EmpresaRepository;
 import com.example.myapplication.ui.helpers.TaskHelper;
-import com.example.myapplication.ui.state.EmpresaState;
+import com.example.myapplication.ui.state.empresa.EmpresaState;
 import com.example.myapplication.utils.mappers.domain.EmpresaMapper;
 
 import java.util.List;
