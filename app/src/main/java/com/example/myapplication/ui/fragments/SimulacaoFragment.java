@@ -123,41 +123,41 @@ public class SimulacaoFragment extends Fragment {
     }
 
     private void atualizarValorTotal(@NonNull CotacaoState estado) {
-        exibirValorTotal(formatCurrency(estado.getValorTotal()));
+        attachValorTotal(formatCurrency(estado.getValorTotal()));
     }
 
     private void atualizarQuantidade(@NonNull CotacaoState estado) {
-        exibirQuantidade(formatInteger(estado.getQuantidade()));
+        attachQuantidade(formatInteger(estado.getQuantidade()));
     }
 
     private void atualizarValorPorCabeca(@NonNull CotacaoState estado) {
-        exibirValorPorCabeca(formatCurrency(estado.getValorPorCabeca()));
+        attachValorPorCabeca(formatCurrency(estado.getValorPorCabeca()));
     }
 
     private void atualizarValorPorKg(@NonNull CotacaoState estado) {
-        exibirValorPorKg(formatCurrency(estado.getValorPorKg()));
+        attachValorPorKg(formatCurrency(estado.getValorPorKg()));
     }
 
     private void limparCartao() {
-        exibirValorTotal(placeholderValorTotal());
-        exibirQuantidade(placeholderQuantidade());
-        exibirValorPorCabeca(placeholderValorMonetario());
-        exibirValorPorKg(placeholderValorMonetario());
+        attachValorTotal(placeholderValorTotal());
+        attachQuantidade(placeholderQuantidade());
+        attachValorPorCabeca(placeholderValorMonetario());
+        attachValorPorKg(placeholderValorMonetario());
     }
 
-    private void exibirValorTotal(@NonNull String valor) {
+    private void attachValorTotal(@NonNull String valor) {
         setText(binding.textoValorTotalDestacado, valor);
     }
 
-    private void exibirQuantidade(@NonNull String quantidade) {
+    private void attachQuantidade(@NonNull String quantidade) {
         setText(binding.textoValorQuantidade, quantidade);
     }
 
-    private void exibirValorPorCabeca(@NonNull String valor) {
+    private void attachValorPorCabeca(@NonNull String valor) {
         setText(binding.textoValorPorCabeca, valor);
     }
 
-    private void exibirValorPorKg(@NonNull String valor) {
+    private void attachValorPorKg(@NonNull String valor) {
         setText(binding.textoValorPorKg, valor);
     }
 

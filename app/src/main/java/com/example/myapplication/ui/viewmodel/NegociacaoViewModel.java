@@ -191,11 +191,6 @@ public class NegociacaoViewModel extends ViewModel {
                 .doubleValue();
     }
 
-    public boolean isNegociada() {
-        NegociacaoState s = state.getValue();
-        return s != null && s.isNegociada();
-    }
-
     public void limpar() {
         state.setValue(new NegociacaoState(null, null, null));
     }

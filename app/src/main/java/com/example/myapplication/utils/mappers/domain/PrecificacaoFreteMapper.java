@@ -2,6 +2,7 @@ package com.example.myapplication.utils.mappers.domain;
 
 import com.example.myapplication.data.models.PrecificacaoFrete;
 import com.example.myapplication.ui.state.frete.FreteState;
+import com.example.myapplication.ui.state.frete.StatusFrete;
 import com.example.myapplication.utils.mappers.Mapper;
 
 import jakarta.inject.Inject;
@@ -19,6 +20,6 @@ public class PrecificacaoFreteMapper implements Mapper<FreteState, PrecificacaoF
 
     @Override
     public FreteState mapFrom(PrecificacaoFrete o) {
-        return new FreteState(o.getValorTotal(), o.getValorParcial());
+        return new FreteState(o.getValorTotal(), o.getValorParcial(), StatusFrete.SIMULADO);
     }
 }

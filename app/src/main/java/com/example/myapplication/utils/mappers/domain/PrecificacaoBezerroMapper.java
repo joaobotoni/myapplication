@@ -14,12 +14,12 @@ public class PrecificacaoBezerroMapper implements Mapper<CotacaoState, Precifica
     }
 
     @Override
-    public PrecificacaoBezerro mapTo(CotacaoState precificacaoBezerroUiState) {
+    public PrecificacaoBezerro mapTo(CotacaoState cotacaoState) {
         return new PrecificacaoBezerro(
-                precificacaoBezerroUiState.getValorPorKg(),
-                precificacaoBezerroUiState.getValorPorCabeca(),
-                precificacaoBezerroUiState.getValorTotal(),
-                precificacaoBezerroUiState.getQuantidade()
+                cotacaoState.getValorPorKg(),
+                cotacaoState.getValorPorCabeca(),
+                cotacaoState.getValorTotal(),
+                cotacaoState.getQuantidade()
         );
     }
 

@@ -67,12 +67,12 @@ public class PrecificacaoFreteViewModel extends ViewModel {
         ));
     }
 
-    public void calcularIncidencia(BigDecimal valorDoFrete, BigDecimal pesoMedio, int totalCarga, StatusFrete statusFrete) {
+    public void calcularIncidencia(BigDecimal valorDoFrete, BigDecimal pesoMedio, int totalCarga) {
         tarefas.adicionar(taskHelper.execute(
                 () -> repositorio.calcularIncidenciaFretePorKg(valorDoFrete, pesoMedio, totalCarga),
                 resultadoIncidencia -> {
                     incidencia.setValue(resultadoIncidencia);
-                    state.setValue(new FreteState(valorDoFrete, resultadoIncidencia, statusFrete));
+                    state.setValue(new FreteState(valorDoFrete, resultadoIncidencia, StatusFrete.MANUAL));
                 },
                 error::postValue
         ));

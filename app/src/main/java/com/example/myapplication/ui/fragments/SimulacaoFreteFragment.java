@@ -285,36 +285,64 @@ public class SimulacaoFreteFragment extends Fragment {
     }
 
     private void exibirDadosDaRota(@NonNull RotaState rota) {
-        exibirCidadeOrigem(rota);
-        exibirCidadeDestino(rota);
-        exibirDistancia(rota);
+        atualizarCidadeOrigem(rota);
+        atualizarCidadeDestino(rota);
+        atualizarDistancia(rota);
     }
 
-    private void exibirCidadeOrigem(@NonNull RotaState rota) {
-        setText(binding.textoCidadeOrigem, rota.getCidadeOrigem());
-        setText(binding.textoEstadoOrigem, rota.getEstadoOrigem());
+    private void atualizarCidadeOrigem(@NonNull RotaState rota) {
+        attachCidadeOrigem(rota.getCidadeOrigem());
+        attachEstadoOrigem(rota.getEstadoOrigem());
     }
 
-    private void exibirCidadeDestino(@NonNull RotaState rota) {
-        setText(binding.textoCidadeDestino, rota.getCidadeDestino());
-        setText(binding.textoEstadoDestino, rota.getEstadoDestino());
+    private void atualizarCidadeDestino(@NonNull RotaState rota) {
+        attachCidadeDestino(rota.getCidadeDestino());
+        attachEstadoDestino(rota.getEstadoDestino());
     }
 
-    private void exibirDistancia(@NonNull RotaState rota) {
-        setText(binding.textoValorDistancia, String.valueOf(rota.getDistancia()));
+    private void atualizarDistancia(@NonNull RotaState rota) {
+        attachDistancia(String.valueOf(rota.getDistancia()));
     }
 
     private void exibirResumoFrete(@NonNull FreteState frete) {
-        exibirValorTotal(frete);
-        exibirValorParcial(frete);
+        atualizarValorTotal(frete);
+        atualizarValorParcial(frete);
     }
 
-    private void exibirValorTotal(@NonNull FreteState frete) {
-        setText(binding.textoValorPrincipal, formatCurrency(frete.getValorTotal()));
+    private void atualizarValorTotal(@NonNull FreteState frete) {
+        attachValorTotal(formatCurrency(frete.getValorTotal()));
     }
 
-    private void exibirValorParcial(@NonNull FreteState frete) {
-        setText(binding.textoValorSecundario, formatCurrency(frete.getValorParcial()));
+    private void atualizarValorParcial(@NonNull FreteState frete) {
+        attachValorParcial(formatCurrency(frete.getValorParcial()));
+    }
+
+    private void attachCidadeOrigem(@NonNull String valor) {
+        setText(binding.textoCidadeOrigem, valor);
+    }
+
+    private void attachEstadoOrigem(@NonNull String valor) {
+        setText(binding.textoEstadoOrigem, valor);
+    }
+
+    private void attachCidadeDestino(@NonNull String valor) {
+        setText(binding.textoCidadeDestino, valor);
+    }
+
+    private void attachEstadoDestino(@NonNull String valor) {
+        setText(binding.textoEstadoDestino, valor);
+    }
+
+    private void attachDistancia(@NonNull String valor) {
+        setText(binding.textoValorDistancia, valor);
+    }
+
+    private void attachValorTotal(@NonNull String valor) {
+        setText(binding.textoValorPrincipal, valor);
+    }
+
+    private void attachValorParcial(@NonNull String valor) {
+        setText(binding.textoValorSecundario, valor);
     }
 
     private void exibirListaDeTransportes(List<TransporteState> transportes) {

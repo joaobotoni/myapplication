@@ -7,10 +7,6 @@ public class FreteState {
     private final BigDecimal valorParcial;
     private final StatusFrete statusFrete;
 
-    public FreteState(BigDecimal valorTotal, BigDecimal valorParcial) {
-        this(valorTotal, valorParcial, StatusFrete.SIMULADO);
-    }
-
     public FreteState(BigDecimal valorTotal, BigDecimal valorParcial, StatusFrete statusFrete) {
         this.valorTotal = valorTotal;
         this.valorParcial = valorParcial;
